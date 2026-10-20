@@ -1,6 +1,6 @@
 //! Configuration loading and management
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use rengo_core::Result;
 
@@ -26,9 +26,9 @@ impl ConfigLoader {
 
     /// Load configuration from multiple sources with precedence:
     /// 1. Environment variables (highest precedence)
-    /// 2. Local configuration file (rengo.toml)
-    /// 3. User configuration (~/.rengo/config.toml)
-    /// 4. System configuration (/etc/rengo/config.toml)
+    /// 2. Local configuration file (`rengo.toml` in cwd or search paths)
+    /// 3. User configuration (`~/.rengo/config.toml`)
+    /// 4. System configuration (`config.toml` in search paths)
     /// 5. Default values (lowest precedence)
     pub async fn load(&self) -> Result<RengoConfig> {
         let mut builder = config::Config::builder();
@@ -37,24 +37,23 @@ impl ConfigLoader {
         builder = builder
             .add_source(config::File::from_str(&self.default_config(), config::FileFormat::Toml));
 
-        // Add system-wide configuration
+        // Add system-wide configuration (first matching config.toml in search paths)
         if let Some(path) = self.find_config_file("config.toml") {
-            builder = builder.add_source(config::File::with_name(path.to_str().unwrap()));
+            builder = builder.add_source(config::File::from(path));
         }
 
         // Add user configuration
         if let Some(path) = self.find_user_config_file("config.toml") {
-            builder = builder.add_source(config::File::with_name(path.to_str().unwrap()));
+            builder = builder.add_source(config::File::from(path));
         }
 
-        // Add local configuration
-        if Path::new("rengo.toml").exists() {
-            builder = builder.add_source(config::File::with_name("rengo.toml"));
+        // Add local configuration (cwd first, then search paths last-to-first)
+        if let Some(path) = self.find_local_config_file() {
+            builder = builder.add_source(config::File::from(path));
         }
 
-        // Add environment variables with RENGO_ prefix
-        builder = builder
-            .add_source(config::Environment::with_prefix("RENGO").separator("_").try_parsing(true));
+        // Environment variables: RENGO_CLUSTER__NAME -> cluster.name
+        builder = builder.add_source(Self::environment_source());
 
         // Build configuration
         let config = builder.build().map_err(|e| rengo_core::RengoError::Config {
@@ -82,11 +81,10 @@ impl ConfigLoader {
             .add_source(config::File::from_str(&self.default_config(), config::FileFormat::Toml));
 
         // Add the specified file
-        builder = builder.add_source(config::File::with_name(path.as_ref().to_str().unwrap()));
+        builder = builder.add_source(config::File::from(path.as_ref()));
 
-        // Add environment variables
-        builder = builder
-            .add_source(config::Environment::with_prefix("RENGO").separator("_").try_parsing(true));
+        // Add environment variables (same nesting rules as load())
+        builder = builder.add_source(Self::environment_source());
 
         let config = builder.build().map_err(|e| rengo_core::RengoError::Config {
             message: format!("Failed to build configuration: {}", e),
@@ -118,42 +116,68 @@ impl ConfigLoader {
         Ok(())
     }
 
+    fn environment_source() -> config::Environment {
+        config::Environment::with_prefix("RENGO")
+            .prefix_separator("_")
+            .separator("__")
+            .try_parsing(true)
+    }
+
     fn default_config(&self) -> String {
         toml::to_string_pretty(&RengoConfig::default()).expect("Failed to serialize default config")
     }
 
-    fn find_config_file(&self, filename: &str) -> Option<std::path::PathBuf> {
-        for search_path in &self.search_paths {
-            let expanded_path = if search_path.starts_with('~') {
-                if let Some(home) = std::env::var_os("HOME") {
-                    let mut path = std::path::PathBuf::from(home);
-                    path.push(&search_path[2..]); // Remove ~/
-                    path.push(filename);
-                    path
-                } else {
-                    continue;
-                }
-            } else {
-                let mut path = std::path::PathBuf::from(search_path);
-                path.push(filename);
-                path
-            };
+    /// Resolve the user home directory (HOME on Unix, USERPROFILE on Windows).
+    fn home_dir() -> Option<PathBuf> {
+        std::env::var_os("HOME")
+            .or_else(|| std::env::var_os("USERPROFILE"))
+            .map(PathBuf::from)
+    }
 
-            if expanded_path.exists() {
-                return Some(expanded_path);
+    fn expand_search_path(&self, search_path: &str) -> Option<PathBuf> {
+        if let Some(rest) = search_path.strip_prefix("~/") {
+            let mut path = Self::home_dir()?;
+            path.push(rest);
+            Some(path)
+        } else if search_path == "~" {
+            Self::home_dir()
+        } else {
+            Some(PathBuf::from(search_path))
+        }
+    }
+
+    fn find_config_file(&self, filename: &str) -> Option<PathBuf> {
+        for search_path in &self.search_paths {
+            let mut path = self.expand_search_path(search_path)?;
+            path.push(filename);
+            if path.exists() {
+                return Some(path);
             }
         }
         None
     }
 
-    fn find_user_config_file(&self, filename: &str) -> Option<std::path::PathBuf> {
-        if let Some(home) = std::env::var_os("HOME") {
-            let mut path = std::path::PathBuf::from(home);
-            path.push(".rengo");
-            path.push(filename);
+    fn find_user_config_file(&self, filename: &str) -> Option<PathBuf> {
+        let mut path = Self::home_dir()?;
+        path.push(".rengo");
+        path.push(filename);
+        path.exists().then_some(path)
+    }
 
-            if path.exists() {
-                return Some(path);
+    /// Local project config: `./rengo.toml`, else `rengo.toml` under a search path
+    /// (later search paths win).
+    fn find_local_config_file(&self) -> Option<PathBuf> {
+        let cwd = PathBuf::from("rengo.toml");
+        if cwd.exists() {
+            return Some(cwd);
+        }
+
+        for search_path in self.search_paths.iter().rev() {
+            if let Some(mut path) = self.expand_search_path(search_path) {
+                path.push("rengo.toml");
+                if path.exists() {
+                    return Some(path);
+                }
             }
         }
         None
@@ -166,7 +190,7 @@ impl ConfigLoader {
         }
 
         // Expand tilde in paths
-        if let Some(home) = std::env::var_os("HOME") {
+        if let Some(home) = Self::home_dir() {
             let home_str = home.to_string_lossy();
 
             if let Some(cert_path) = &config.network.certificate_path {
@@ -245,12 +269,22 @@ impl Default for ConfigLoader {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Mutex, OnceLock};
+
     use tempfile::TempDir;
 
     use super::*;
 
+    fn env_lock() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(())).lock().unwrap_or_else(|e| e.into_inner())
+    }
+
     #[tokio::test]
     async fn test_load_default_config() {
+        let _guard = env_lock();
+        std::env::remove_var("RENGO_CLUSTER__NAME");
+
         let loader = ConfigLoader::new();
         let config = loader.load().await.unwrap();
 
@@ -261,6 +295,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_load_from_file() {
+        let _guard = env_lock();
+        std::env::remove_var("RENGO_CLUSTER__NAME");
+
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("test.toml");
 
@@ -279,5 +316,17 @@ mod tests {
 
         assert_eq!(config.cluster.name, "test-cluster");
         assert_eq!(config.node.bind_address, "127.0.0.1:8080");
+    }
+
+    #[tokio::test]
+    async fn test_environment_override() {
+        let _guard = env_lock();
+        std::env::set_var("RENGO_CLUSTER__NAME", "from-env");
+
+        let loader = ConfigLoader::new();
+        let config = loader.load().await.unwrap();
+        assert_eq!(config.cluster.name, "from-env");
+
+        std::env::remove_var("RENGO_CLUSTER__NAME");
     }
 }
