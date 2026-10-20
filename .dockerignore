@@ -1,0 +1,49 @@
+# Git and CI
+.git
+.github
+.gitignore
+
+# Build artifacts
+target/
+**/target/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local data and logs
+data/
+*.db
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Docs and non-runtime assets (keep proto for build.rs)
+docs/
+*.md
+!README.MD
+!README.md
+
+# Tests / benches / scripts not needed in image build
+benches/
+tests/
+scripts/
+monitoring/
+
+# Debug / alternate Docker files
+Dockerfile.debug
+docker-compose.yml
+Makefile
+
+# Misc tooling configs (not required to compile)
+clippy.toml
+rustfmt.toml
+deny.toml
+.cargo/

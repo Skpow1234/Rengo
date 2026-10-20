@@ -156,7 +156,7 @@ impl fmt::Display for Key {
 }
 
 /// Value for data storage operations
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Value(Vec<u8>);
 
 impl Value {

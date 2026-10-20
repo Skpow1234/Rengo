@@ -202,10 +202,11 @@ impl GroupAggregationState {
     /// Finalize and get all groups with their aggregated values
     pub fn finalize(self) -> Result<Vec<(Vec<Value>, Vec<Value>)>> {
         let mut results = Vec::new();
+        let group_by_columns = self.group_by_columns;
 
         for (group_key, accumulators) in self.groups {
             // Deserialize group key back to values
-            let group_values = self.deserialize_group_key(&group_key)?;
+            let group_values = Self::deserialize_group_key_static(&group_by_columns, &group_key)?;
 
             // Finalize all aggregates for this group
             let aggregate_values: Result<Vec<Value>> =
@@ -235,10 +236,14 @@ impl GroupAggregationState {
 
     /// Deserialize group key back to values
     fn deserialize_group_key(&self, key: &[u8]) -> Result<Vec<Value>> {
+        Self::deserialize_group_key_static(&self.group_by_columns, key)
+    }
+
+    fn deserialize_group_key_static(group_by_columns: &[usize], key: &[u8]) -> Result<Vec<Value>> {
         let mut values = Vec::new();
         let mut offset = 0;
 
-        for _ in 0..self.group_by_columns.len() {
+        for _ in 0..group_by_columns.len() {
             if offset + 4 > key.len() {
                 break;
             }
