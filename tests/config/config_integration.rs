@@ -189,10 +189,7 @@ async fn test_config_loader_tilde_expansion() {
         config.network.ca_certificate_path.unwrap(),
         std::path::PathBuf::from(&expected_ca_path)
     );
-    assert_eq!(
-        config.logging.file_path.unwrap(),
-        std::path::PathBuf::from(&expected_log_path)
-    );
+    assert_eq!(config.logging.file_path.unwrap(), std::path::PathBuf::from(&expected_log_path));
 
     restore_home(prev_home, prev_profile);
 }

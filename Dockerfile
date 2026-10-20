@@ -38,12 +38,11 @@ RUN mkdir -p src bin benches \
     printf 'pub fn _docker_dep_stub() {}\n' > rengo-storage/src/lib.rs && \
     cargo build --release --bin rengo --features sled --no-default-features && \
     rm -rf src bin benches tests proto \
-        rengo-core/src rengo-config/src rengo-storage/src \
-        target/release/deps/librengo* \
-        target/release/deps/rengo-* \
-        target/release/.fingerprint/rengo* \
-        target/release/rengo \
-        target/release/rengo.d
+        rengo-core/src rengo-config/src rengo-storage/src && \
+    find target/release -maxdepth 2 \( \
+        -name 'librengo*' -o -name 'rengo-*' -o -name 'rengo' -o -name 'rengo.d' \
+    \) -exec rm -rf {} + 2>/dev/null || true && \
+    find target/release/.fingerprint -maxdepth 1 -name 'rengo*' -exec rm -rf {} + 2>/dev/null || true
 
 # Real sources (explicit copies ensure stubs/whiteouts cannot linger)
 COPY Cargo.toml Cargo.lock* build.rs ./
@@ -57,8 +56,7 @@ COPY benches ./benches
 COPY tests ./tests
 COPY config ./config
 
-RUN cargo build --release --bin rengo --features sled --no-default-features && \
-    strip target/release/rengo
+RUN cargo build --release --bin rengo --features sled --no-default-features
 
 FROM gcr.io/distroless/cc-debian12
 
