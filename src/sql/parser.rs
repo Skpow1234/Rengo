@@ -110,6 +110,9 @@ pub enum Token {
     // Identifiers
     Identifier(String),
 
+    // Prepared-statement parameter ($1, $2, ...)
+    Parameter(u32),
+
     // Punctuation
     LeftParen,
     RightParen,
@@ -222,6 +225,32 @@ impl SqlParser {
                 '%' => {
                     tokens.push(Token::Modulo);
                     chars.next();
+                }
+                '$' => {
+                    chars.next();
+                    let mut digits = String::new();
+                    while let Some(&c) = chars.peek() {
+                        if c.is_ascii_digit() {
+                            digits.push(c);
+                            chars.next();
+                        } else {
+                            break;
+                        }
+                    }
+                    if digits.is_empty() {
+                        return Err(RengoError::Parse {
+                            message: "Expected parameter number after '$'".to_string(),
+                        });
+                    }
+                    let index: u32 = digits.parse().map_err(|_| RengoError::Parse {
+                        message: format!("Invalid parameter index: ${}", digits),
+                    })?;
+                    if index == 0 {
+                        return Err(RengoError::Parse {
+                            message: "Parameter index must be >= 1".to_string(),
+                        });
+                    }
+                    tokens.push(Token::Parameter(index));
                 }
                 '=' => {
                     tokens.push(Token::Equals);
@@ -1338,6 +1367,11 @@ impl SqlParser {
             Token::Null => {
                 self.advance();
                 Ok(Expression::Literal(Literal::Null))
+            }
+            Token::Parameter(index) => {
+                let index = *index;
+                self.advance();
+                Ok(Expression::Parameter(index))
             }
             Token::Identifier(name) => {
                 let name = name.clone();

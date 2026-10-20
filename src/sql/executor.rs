@@ -1262,7 +1262,7 @@ mod tests {
             where_clause: Some(Expression::BinaryOp {
                 left: Box::new(Expression::Column("id".to_string())),
                 op: BinaryOperator::Equal,
-                right: Box::new(Expression::Literal(Literal::Integer(0))), // Row index 0
+                right: Box::new(Expression::Literal(Literal::Integer(1))),
             }),
             group_by: vec![],
             having: None,

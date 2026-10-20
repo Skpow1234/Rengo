@@ -16,7 +16,8 @@
 //! - **Configuration Layer**: Hierarchical configuration management
 //! - **Server Layer**: Database node orchestration (`DatabaseNode`)
 
-#![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
+// missing_docs deferred until DX-Docs-Quality; -D warnings would fail cargo doc otherwise
+#![warn(rust_2018_idioms, unused_qualifications)]
 #![deny(unsafe_code)]
 
 // Re-export workspace crates

@@ -19,10 +19,18 @@ COPY rengo-storage/Cargo.toml ./rengo-storage/
 
 RUN if [ ! -f Cargo.lock ]; then cargo generate-lockfile; fi
 
-# Dependency cache layer
-RUN mkdir -p src bin rengo-core/src rengo-config/src rengo-storage/src && \
+# Dependency cache layer (stub sources so Cargo.toml targets resolve; benches/tests
+# are excluded by .dockerignore and must exist for manifest parsing)
+RUN mkdir -p src bin benches \
+        tests/sql tests/storage tests/config \
+        rengo-core/src rengo-config/src rengo-storage/src && \
     echo "fn main() {}" > src/lib.rs && \
     echo "fn main() {}" > bin/rengo.rs && \
+    echo "fn main() {}" > benches/storage.rs && \
+    echo "fn main() {}" > tests/sql/sql_integration.rs && \
+    echo "fn main() {}" > tests/storage/storage_integration.rs && \
+    echo "fn main() {}" > tests/config/config_integration.rs && \
+    echo "fn main() {}" > tests/node_integration.rs && \
     echo "fn main() {}" > rengo-core/src/lib.rs && \
     echo "fn main() {}" > rengo-config/src/lib.rs && \
     echo "fn main() {}" > rengo-storage/src/lib.rs && \

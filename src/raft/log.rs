@@ -206,16 +206,21 @@ impl RaftLog {
 
     /// Install snapshot
     pub fn install_snapshot(&mut self, last_included_index: LogIndex, last_included_term: Term) {
-        self.snapshot_index = last_included_index;
-        self.snapshot_term = last_included_term;
-
-        // Remove log entries included in snapshot
+        // Drop entries covered by the snapshot before updating snapshot_index
+        // (offsets are relative to the previous snapshot_index).
         if last_included_index >= self.last_index() {
             self.entries.clear();
-        } else {
-            let offset = (last_included_index - self.snapshot_index) as usize;
-            self.entries.drain(..offset);
+        } else if last_included_index > self.snapshot_index {
+            let keep_from = (last_included_index - self.snapshot_index) as usize;
+            if keep_from < self.entries.len() {
+                self.entries.drain(..keep_from);
+            } else {
+                self.entries.clear();
+            }
         }
+
+        self.snapshot_index = last_included_index;
+        self.snapshot_term = last_included_term;
 
         // Update commit and applied indices
         if self.commit_index < last_included_index {

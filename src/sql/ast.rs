@@ -302,6 +302,8 @@ pub enum Expression {
         expr: Box<Expression>,
         negated: bool,
     },
+    /// Prepared-statement parameter placeholder (`$1`, `$2`, ...)
+    Parameter(u32),
 }
 
 /// Literal values

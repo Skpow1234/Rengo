@@ -529,14 +529,14 @@ enum ConstraintType {
 
 enum IndexType {
   BTREE = 0;
-  HASH = 1;
+  HASH_INDEX = 1;
   GIN = 2;
   GIST = 3;
 }
 
 enum PartitionType {
   RANGE = 0;
-  HASH = 1;
+  HASH_PARTITION = 1;
   LIST = 2;
 }
 

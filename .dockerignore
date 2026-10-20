@@ -31,9 +31,8 @@ docs/
 !README.MD
 !README.md
 
-# Tests / benches / scripts not needed in image build
-benches/
-tests/
+# Scripts / monitoring not needed for binary image build.
+# Keep benches/ and tests/ — Cargo.toml declares them and fails to parse if missing.
 scripts/
 monitoring/
 # keep config/ for docker.toml

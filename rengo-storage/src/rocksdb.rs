@@ -66,7 +66,7 @@ impl StorageEngine for RocksDBEngine {
             .get(key.as_slice())
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
 
-        Ok(result.map(Value::new))
+        Ok(result.as_deref().map(Value::new))
     }
 
     async fn put(&self, key: Key, value: Value) -> Result<()> {
