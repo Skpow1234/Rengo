@@ -86,6 +86,9 @@ pub trait StorageEngine: Send + Sync {
 
     /// Close the storage engine
     async fn close(&mut self) -> Result<()>;
+
+    /// Scan all key-value pairs whose keys start with `prefix`
+    async fn scan_prefix(&self, prefix: &[u8]) -> Result<Vec<(Key, Value)>>;
 }
 
 /// Factory for creating storage engines

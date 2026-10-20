@@ -134,6 +134,20 @@ impl StorageEngine for RocksDBEngine {
         // RocksDB doesn't have explicit close, DB will be dropped
         Ok(())
     }
+
+    async fn scan_prefix(&self, prefix: &[u8]) -> Result<Vec<(Key, Value)>> {
+        let mut results = Vec::new();
+        let iter = self.db.prefix_iterator(prefix);
+        for item in iter {
+            let (key, value) = item
+                .map_err(|e| shardforge_core::ShardForgeError::Storage { source: Box::new(e) })?;
+            if !key.starts_with(prefix) {
+                break;
+            }
+            results.push((Key::new(&key), Value::new(&value)));
+        }
+        Ok(results)
+    }
 }
 
 #[cfg(not(feature = "rocksdb"))]
@@ -188,6 +202,10 @@ impl StorageEngine for RocksDBEngine {
     }
 
     async fn close(&mut self) -> Result<()> {
+        unimplemented!("RocksDB storage engine not enabled")
+    }
+
+    async fn scan_prefix(&self, _prefix: &[u8]) -> Result<Vec<(Key, Value)>> {
         unimplemented!("RocksDB storage engine not enabled")
     }
 }

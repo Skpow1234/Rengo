@@ -27,6 +27,7 @@ Docker / Compose and platform build notes: **[Getting started](docs/getting-star
 | Getting started | [docs/getting-started.md](docs/getting-started.md) |
 | Endpoints (ports & gRPC) | [docs/endpoints.md](docs/endpoints.md) |
 | Milestones & status | [docs/milestones.md](docs/milestones.md) |
+| Milestone backlog (500+) | [docs/milestones-backlog.md](docs/milestones-backlog.md) |
 | Ways to deploy | [docs/deploy.md](docs/deploy.md) |
 | Docker profiles | [docs/DOCKER.md](docs/DOCKER.md) |
 | Architecture | [docs/architecture.md](docs/architecture.md) |

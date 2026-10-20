@@ -108,6 +108,16 @@ impl StorageEngine for SledEngine {
         // Sled doesn't have explicit close, Db will be dropped
         Ok(())
     }
+
+    async fn scan_prefix(&self, prefix: &[u8]) -> Result<Vec<(Key, Value)>> {
+        let mut results = Vec::new();
+        for item in self.db.scan_prefix(prefix) {
+            let (key, value) = item
+                .map_err(|e| shardforge_core::ShardForgeError::Storage { source: Box::new(e) })?;
+            results.push((Key::new(&key), Value::new(&value)));
+        }
+        Ok(results)
+    }
 }
 
 #[cfg(not(feature = "sled"))]
@@ -162,6 +172,10 @@ impl StorageEngine for SledEngine {
     }
 
     async fn close(&mut self) -> Result<()> {
+        unimplemented!("Sled storage engine not enabled")
+    }
+
+    async fn scan_prefix(&self, _prefix: &[u8]) -> Result<Vec<(Key, Value)>> {
         unimplemented!("Sled storage engine not enabled")
     }
 }

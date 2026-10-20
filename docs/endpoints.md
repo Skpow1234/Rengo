@@ -1,15 +1,47 @@
 # Endpoints & Network APIs
 
-ShardForge exposes a **gRPC** service defined in [`proto/database.proto`](../proto/database.proto). Default bind addresses come from [`shardforge.toml`](../shardforge.toml).
+ShardForge exposes:
 
-> **Status:** The protocol and stubs exist. The gRPC server currently **simulates** a listen loop and returns placeholder responses until protoc generation and service wiring are finished. See [milestones](milestones.md).
+1. A **TCP JSON SQL** listener on `[node].bind_address` (live via `DatabaseNode::start` / `shardforge start`)
+2. A **gRPC** service defined in [`proto/database.proto`](../proto/database.proto) (stubs until `grpc-enabled` + protoc)
+
+Default bind addresses come from [`shardforge.toml`](../shardforge.toml). See [milestones](milestones.md).
 
 ## Default ports
 
 | Port | Config key | Purpose |
 |------|------------|---------|
-| `5432` | `[node].bind_address` | Primary node / client bind (intended SQL / wire access) |
+| `5432` | `[node].bind_address` | TCP JSON SQL (and future PG/gRPC client bind) |
 | `9090` | `[monitoring].bind_address` | Metrics / monitoring bind |
+
+## TCP JSON SQL protocol (live)
+
+Newline-delimited JSON over TCP.
+
+**Request**
+
+```json
+{"sql":"CREATE TABLE t (id INTEGER, name VARCHAR(64))"}
+```
+
+**Response**
+
+```json
+{"ok":true,"columns":[],"rows":[],"affected_rows":1,"error":null}
+```
+
+Example with `nc` / PowerShell after `shardforge start`:
+
+```bash
+echo '{"sql":"SELECT id, name FROM t"}' | nc 127.0.0.1 5432
+```
+
+CLI without a long-running server (in-process node):
+
+```bash
+shardforge sql "SELECT 1" --config shardforge.toml
+```
+
 
 Docker Compose maps the same ports (and variants for multi-profile setups):
 

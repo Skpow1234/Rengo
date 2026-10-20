@@ -9,6 +9,7 @@ Start here if you are new to the project.
 | [Getting started](getting-started.md) | Build, Docker, Compose, first commands |
 | [Endpoints](endpoints.md) | Ports and gRPC RPCs |
 | [Milestones](milestones.md) | Current status vs roadmap phases |
+| [Milestone backlog](milestones-backlog.md) | 500+ engineering milestones from code audit |
 | [Deployment](deployment.md) | Single-node, cluster, and IaC sketches |
 | [Docker](DOCKER.md) | Compose profiles, ports, images |
 | [Build](build.md) | Platform builds and storage features |

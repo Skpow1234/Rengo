@@ -94,6 +94,19 @@ impl StorageEngine for MemoryEngine {
         // No-op for in-memory storage
         Ok(())
     }
+
+    async fn scan_prefix(&self, prefix: &[u8]) -> Result<Vec<(Key, Value)>> {
+        let data = self.data.read().await;
+        let start = Key::new(prefix);
+        let mut results = Vec::new();
+        for (key, value) in data.range(start..) {
+            if !key.as_slice().starts_with(prefix) {
+                break;
+            }
+            results.push((key.clone(), value.clone()));
+        }
+        Ok(results)
+    }
 }
 
 #[cfg(test)]

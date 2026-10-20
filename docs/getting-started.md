@@ -2,7 +2,7 @@
 
 Quick ways to build and run ShardForge locally. For production layouts, see [deployment](deployment.md) and [Docker](DOCKER.md).
 
-> **Note:** ShardForge is in early development. `init` / `start` / `sql` CLI entrypoints exist, but the full database server (bind, gRPC, durable SQL session) is still being wired. See [milestones](milestones.md).
+> **Note:** Single-node `DatabaseNode` can open storage, run SQL, and listen for TCP JSON SQL via `shardforge start`. Full gRPC tonic serve, Raft clustering, and durable MVCC are still in progress. See [milestones](milestones.md).
 
 ## Prerequisites
 

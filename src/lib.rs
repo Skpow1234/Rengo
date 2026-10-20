@@ -9,12 +9,12 @@
 //!
 //! - **Core Layer**: Core types, error handling, and utilities
 //! - **Storage Layer**: Pluggable storage engines and persistence
-//! - **SQL Layer**: SQL parsing, query planning, and execution (planned)
-//! - **Transaction Layer**: ACID transactions and concurrency control (planned)
-//! - **Consensus Layer**: RAFT consensus and distributed coordination (planned)
-//! - **Network Layer**: gRPC communication and client connections
+//! - **SQL Layer**: SQL parsing, query planning, and execution
+//! - **Transaction Layer**: ACID transactions and concurrency control
+//! - **Consensus Layer**: RAFT consensus and distributed coordination
+//! - **Network Layer**: gRPC / TCP communication and client connections
 //! - **Configuration Layer**: Hierarchical configuration management
-//! - **Server Layer**: Main database node orchestration (planned)
+//! - **Server Layer**: Database node orchestration (`DatabaseNode`)
 
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![deny(unsafe_code)]
@@ -29,6 +29,7 @@ pub use shardforge_storage as storage;
 // Local modules
 pub mod network;
 pub mod raft;
+pub mod server;
 pub mod sql;
 pub mod transaction;
 
@@ -44,14 +45,7 @@ mod tests {
 
     #[test]
     fn test_library_initialization() {
-        // Test that the library can be initialized
         assert!(!VERSION.is_empty());
         assert!(!BUILD_INFO.is_empty());
-    }
-
-    #[test]
-    fn test_module_imports() {
-        // Test that all modules can be imported
-        // This ensures the module structure is correct
     }
 }

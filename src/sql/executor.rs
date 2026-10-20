@@ -19,13 +19,14 @@ pub struct ExecutionContext {
 }
 
 /// Schema catalog for metadata management
+#[derive(Debug, Clone, Default)]
 pub struct SchemaCatalog {
     /// Table schemas by name
     tables: HashMap<String, TableSchema>,
 }
 
 /// Table schema definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TableSchema {
     pub name: String,
     pub columns: Vec<ColumnSchema>,
@@ -34,17 +35,18 @@ pub struct TableSchema {
 }
 
 /// Column schema definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ColumnSchema {
     pub name: String,
     pub data_type: DataType,
     pub nullable: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub default_value: Option<Expression>,
     pub auto_increment: bool,
 }
 
 /// Index schema definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct IndexSchema {
     pub name: String,
     pub table_name: String,
@@ -55,7 +57,8 @@ pub struct IndexSchema {
 
 /// Query executor
 pub struct QueryExecutor {
-    context: ExecutionContext,
+    /// Execution context (storage, MVCC, catalog)
+    pub context: ExecutionContext,
 }
 
 /// Query execution result
@@ -111,10 +114,71 @@ impl QueryExecutor {
             Statement::Update(stmt) => self.execute_update(stmt).await,
             Statement::Delete(stmt) => self.execute_delete(stmt).await,
             Statement::Select(stmt) => self.execute_select(stmt).await,
-            _ => Err(ShardForgeError::Query {
-                message: "Statement type not yet implemented".to_string(),
-            }),
+            Statement::Begin(_) | Statement::Commit(_) | Statement::Rollback(_) => {
+                // Lifecycle is owned by DatabaseNode / TransactionManager
+                Ok(QueryResult {
+                    columns: vec![],
+                    rows: vec![],
+                    affected_rows: 0,
+                })
+            }
         }
+    }
+
+    async fn persist_catalog_entry(&mut self, schema: &TableSchema) -> Result<()> {
+        let key = Key::from_string(&format!("__catalog__table__{}", schema.name));
+        let bytes = serde_json::to_vec(schema).map_err(|e| ShardForgeError::internal(format!(
+            "Failed to serialize table schema: {}",
+            e
+        )))?;
+        self.context.storage.put(key, Value::new(&bytes)).await?;
+
+        let mut names = self.context.catalog.list_tables();
+        if !names.iter().any(|n| n == &schema.name) {
+            names.push(schema.name.clone());
+        }
+        names.sort();
+        let list_key = Key::from_string("__catalog__tables");
+        let list_bytes = serde_json::to_vec(&names).map_err(|e| {
+            ShardForgeError::internal(format!("Failed to serialize catalog list: {}", e))
+        })?;
+        self.context.storage.put(list_key, Value::new(&list_bytes)).await?;
+        Ok(())
+    }
+
+    async fn remove_catalog_entry(&mut self, table_name: &str) -> Result<()> {
+        let key = Key::from_string(&format!("__catalog__table__{}", table_name));
+        self.context.storage.delete(&key).await?;
+
+        let names: Vec<String> = self
+            .context
+            .catalog
+            .list_tables()
+            .into_iter()
+            .filter(|n| n != table_name)
+            .collect();
+        let list_key = Key::from_string("__catalog__tables");
+        let list_bytes = serde_json::to_vec(&names).map_err(|e| {
+            ShardForgeError::internal(format!("Failed to serialize catalog list: {}", e))
+        })?;
+        self.context.storage.put(list_key, Value::new(&list_bytes)).await?;
+        Ok(())
+    }
+
+    async fn next_row_id(&mut self, table_name: &str) -> Result<u64> {
+        let seq_key = Key::from_string(&format!("__seq__{}", table_name));
+        let next = match self.context.storage.get(&seq_key).await? {
+            Some(value) => {
+                let s = String::from_utf8_lossy(value.as_slice());
+                s.parse::<u64>().unwrap_or(0) + 1
+            }
+            None => 1,
+        };
+        self.context
+            .storage
+            .put(seq_key, Value::from_string(&next.to_string()))
+            .await?;
+        Ok(next)
     }
 
     /// Execute CREATE TABLE statement
@@ -147,21 +211,22 @@ impl QueryExecutor {
             })
             .collect();
 
+        let primary_key = stmt.constraints.iter().find_map(|c| match c {
+            TableConstraint::PrimaryKey { columns } => Some(columns.clone()),
+            _ => None,
+        });
+
         // Create table schema
         let table_schema = TableSchema {
             name: stmt.name.clone(),
             columns,
-            primary_key: None, // TODO: Extract from constraints
+            primary_key,
             indexes: vec![],
         };
 
-        // Add to catalog
-        self.context.catalog.add_table(table_schema);
-
-        // Store table metadata in storage engine
-        let metadata_key = Key::new(format!("__table__{}", stmt.name).as_bytes());
-        let metadata_value = Value::new(b"created"); // Simplified metadata
-        self.context.storage.put(metadata_key, metadata_value).await?;
+        // Add to catalog and persist durable metadata
+        self.context.catalog.add_table(table_schema.clone());
+        self.persist_catalog_entry(&table_schema).await?;
 
         Ok(QueryResult {
             columns: vec![],
@@ -187,12 +252,19 @@ impl QueryExecutor {
             }
         }
 
-        // Remove from catalog
-        self.context.catalog.remove_table(&stmt.name);
+        // Delete row data
+        let prefix = format!("{}:", stmt.name);
+        let rows = self.context.storage.scan_prefix(prefix.as_bytes()).await?;
+        for (key, _) in rows {
+            self.context.storage.delete(&key).await?;
+        }
 
-        // Remove table metadata from storage
-        let metadata_key = Key::new(format!("__table__{}", stmt.name).as_bytes());
-        self.context.storage.delete(&metadata_key).await?;
+        // Remove from catalog and durable metadata
+        self.context.catalog.remove_table(&stmt.name);
+        self.remove_catalog_entry(&stmt.name).await?;
+
+        let seq_key = Key::from_string(&format!("__seq__{}", stmt.name));
+        let _ = self.context.storage.delete(&seq_key).await;
 
         Ok(QueryResult {
             columns: vec![],
@@ -203,22 +275,24 @@ impl QueryExecutor {
 
     /// Execute INSERT statement
     async fn execute_insert(&mut self, stmt: InsertStatement) -> Result<QueryResult> {
-        // Get table schema
-        let table_schema = self.context.catalog.get_table(&stmt.table_name).ok_or_else(|| {
-            ShardForgeError::Query {
-                message: format!("Table '{}' does not exist", stmt.table_name),
-            }
-        })?;
+        let schema_column_count = {
+            let table_schema =
+                self.context.catalog.get_table(&stmt.table_name).ok_or_else(|| {
+                    ShardForgeError::Query {
+                        message: format!("Table '{}' does not exist", stmt.table_name),
+                    }
+                })?;
+            table_schema.columns.len()
+        };
 
         let mut affected_rows = 0;
 
         // Process each row
         for (row_index, values) in stmt.values.iter().enumerate() {
-            // Validate column count
             let expected_columns = if let Some(ref columns) = stmt.columns {
                 columns.len()
             } else {
-                table_schema.columns.len()
+                schema_column_count
             };
 
             if values.len() != expected_columns {
@@ -232,21 +306,18 @@ impl QueryExecutor {
                 });
             }
 
-            // Generate primary key (simplified - use row index for now)
-            let primary_key = Key::new(format!("{}:{}", stmt.table_name, row_index).as_bytes());
-
-            // Convert expressions to values (simplified evaluation)
             let mut row_data = Vec::new();
             for expr in values {
                 let value = self.evaluate_expression(expr)?;
                 row_data.push(value);
             }
 
-            // Serialize row data (simplified)
+            let row_id = self.next_row_id(&stmt.table_name).await?;
+            let primary_key = Key::from_string(&format!("{}:{}", stmt.table_name, row_id));
+
             let serialized = self.serialize_row(&row_data)?;
             let storage_value = Value::new(&serialized);
 
-            // Store in storage engine
             self.context.storage.put(primary_key, storage_value).await?;
             affected_rows += 1;
         }
@@ -260,32 +331,28 @@ impl QueryExecutor {
 
     /// Execute UPDATE statement
     async fn execute_update(&mut self, stmt: UpdateStatement) -> Result<QueryResult> {
-        // Get table schema
-        let table_schema = self.context.catalog.get_table(&stmt.table_name).ok_or_else(|| {
-            ShardForgeError::Query {
+        let table_schema = self
+            .context
+            .catalog
+            .get_table(&stmt.table_name)
+            .cloned()
+            .ok_or_else(|| ShardForgeError::Query {
                 message: format!("Table '{}' does not exist", stmt.table_name),
-            }
-        })?;
+            })?;
 
         let mut affected_rows = 0;
-
-        // Scan all rows in the table
-        let prefix = Key::new(format!("{}:", stmt.table_name).as_bytes());
         let all_keys = self.scan_table_keys(&stmt.table_name).await?;
 
         for key in all_keys {
-            // Get row data
             if let Some(storage_value) = self.context.storage.get(&key).await? {
                 let row_data = self.deserialize_row(storage_value.as_ref())?;
 
-                // Check WHERE clause
                 if let Some(ref where_clause) = stmt.where_clause {
-                    if !self.evaluate_condition(where_clause, table_schema, &row_data)? {
+                    if !self.evaluate_condition(where_clause, &table_schema, &row_data)? {
                         continue;
                     }
                 }
 
-                // Apply updates
                 let mut updated_row = row_data.clone();
                 for assignment in &stmt.assignments {
                     let column_index = table_schema
@@ -300,7 +367,6 @@ impl QueryExecutor {
                     updated_row[column_index] = new_value;
                 }
 
-                // Store updated row
                 let serialized = self.serialize_row(&updated_row)?;
                 let storage_value = Value::new(&serialized);
                 self.context.storage.put(key, storage_value).await?;
@@ -317,31 +383,28 @@ impl QueryExecutor {
 
     /// Execute DELETE statement
     async fn execute_delete(&mut self, stmt: DeleteStatement) -> Result<QueryResult> {
-        // Get table schema
-        let table_schema = self.context.catalog.get_table(&stmt.table_name).ok_or_else(|| {
-            ShardForgeError::Query {
+        let table_schema = self
+            .context
+            .catalog
+            .get_table(&stmt.table_name)
+            .cloned()
+            .ok_or_else(|| ShardForgeError::Query {
                 message: format!("Table '{}' does not exist", stmt.table_name),
-            }
-        })?;
+            })?;
 
         let mut affected_rows = 0;
-
-        // Scan all rows in the table
         let all_keys = self.scan_table_keys(&stmt.table_name).await?;
 
         for key in all_keys {
-            // Get row data for WHERE clause evaluation
             if let Some(storage_value) = self.context.storage.get(&key).await? {
                 let row_data = self.deserialize_row(storage_value.as_ref())?;
 
-                // Check WHERE clause
                 if let Some(ref where_clause) = stmt.where_clause {
-                    if !self.evaluate_condition(where_clause, table_schema, &row_data)? {
+                    if !self.evaluate_condition(where_clause, &table_schema, &row_data)? {
                         continue;
                     }
                 }
 
-                // Delete the row
                 self.context.storage.delete(&key).await?;
                 affected_rows += 1;
             }
@@ -356,21 +419,22 @@ impl QueryExecutor {
 
     /// Execute SELECT statement with full table scan
     async fn execute_select(&mut self, stmt: SelectStatement) -> Result<QueryResult> {
-        // Get table name (simplified - single table queries only)
-        let table_name = stmt.from.ok_or_else(|| ShardForgeError::Query {
-            message: "FROM clause is required".to_string(),
-        })?;
+        // Allow `SELECT <literals>` without FROM (e.g. SELECT 1)
+        if stmt.from.is_none() {
+            return self.execute_select_literals(&stmt);
+        }
 
-        // Get table schema
-        let table_schema =
-            self.context
-                .catalog
-                .get_table(&table_name)
-                .ok_or_else(|| ShardForgeError::Query {
-                    message: format!("Table '{}' does not exist", table_name),
-                })?;
+        let table_name = stmt.from.clone().unwrap();
 
-        // Check if this is an aggregate query
+        let table_schema = self
+            .context
+            .catalog
+            .get_table(&table_name)
+            .cloned()
+            .ok_or_else(|| ShardForgeError::Query {
+                message: format!("Table '{}' does not exist", table_name),
+            })?;
+
         let has_aggregates = stmt.columns.iter().any(|item| {
             if let SelectItem::Expression { expr, .. } = item {
                 contains_aggregate(expr)
@@ -380,12 +444,38 @@ impl QueryExecutor {
         });
 
         if has_aggregates || !stmt.group_by.is_empty() {
-            self.execute_select_with_aggregation(stmt, table_schema, &table_name)
+            self.execute_select_with_aggregation(stmt, &table_schema, &table_name)
                 .await
         } else {
-            self.execute_select_simple(stmt, table_schema, &table_name)
+            self.execute_select_simple(stmt, &table_schema, &table_name)
                 .await
         }
+    }
+
+    fn execute_select_literals(&self, stmt: &SelectStatement) -> Result<QueryResult> {
+        let mut columns = Vec::new();
+        let mut row = Vec::new();
+        for (idx, item) in stmt.columns.iter().enumerate() {
+            match item {
+                SelectItem::Expression { expr, alias } => {
+                    let name = alias
+                        .clone()
+                        .unwrap_or_else(|| format!("col{}", idx + 1));
+                    columns.push(name);
+                    row.push(self.evaluate_expression(expr)?);
+                }
+                SelectItem::Wildcard => {
+                    return Err(ShardForgeError::Query {
+                        message: "SELECT * requires a FROM clause".to_string(),
+                    });
+                }
+            }
+        }
+        Ok(QueryResult {
+            columns,
+            rows: vec![row],
+            affected_rows: 0,
+        })
     }
 
     /// Execute a simple SELECT without aggregation
@@ -761,20 +851,9 @@ impl QueryExecutor {
 
     /// Scan all keys for a table
     async fn scan_table_keys(&self, table_name: &str) -> Result<Vec<Key>> {
-        let mut keys = Vec::new();
         let prefix = format!("{}:", table_name);
-
-        // Use storage iterator to scan all keys with the table prefix
-        // This is a simplified implementation - in production, we'd use proper iterator support
-        for i in 0..1000 {
-            // Arbitrary limit for now
-            let key = Key::new(format!("{}{}",prefix, i).as_bytes());
-            if self.context.storage.get(&key).await?.is_some() {
-                keys.push(key);
-            }
-        }
-
-        Ok(keys)
+        let entries = self.context.storage.scan_prefix(prefix.as_bytes()).await?;
+        Ok(entries.into_iter().map(|(key, _)| key).collect())
     }
 
     /// Evaluate a condition against a row
@@ -834,9 +913,9 @@ impl QueryExecutor {
         match expr {
             Expression::Literal(lit) => match lit {
                 Literal::Null => Ok(Value::new(b"")),
-                Literal::Boolean(b) => Ok(Value::new(&[if *b { 1 } else { 0 }])),
-                Literal::Integer(i) => Ok(Value::new(&i.to_le_bytes())),
-                Literal::Float(f) => Ok(Value::new(&f.to_le_bytes())),
+                Literal::Boolean(b) => Ok(Value::from_string(if *b { "true" } else { "false" })),
+                Literal::Integer(i) => Ok(Value::from_string(&i.to_string())),
+                Literal::Float(f) => Ok(Value::from_string(&f.to_string())),
                 Literal::String(s) => Ok(Value::new(s.as_bytes())),
                 Literal::Binary(b) => Ok(Value::new(b)),
             },
@@ -922,9 +1001,9 @@ impl QueryExecutor {
         match expr {
             Expression::Literal(lit) => match lit {
                 Literal::Null => Ok(Value::new(b"")),
-                Literal::Boolean(b) => Ok(Value::new(&[if *b { 1 } else { 0 }])),
-                Literal::Integer(i) => Ok(Value::new(&i.to_le_bytes())),
-                Literal::Float(f) => Ok(Value::new(&f.to_le_bytes())),
+                Literal::Boolean(b) => Ok(Value::from_string(if *b { "true" } else { "false" })),
+                Literal::Integer(i) => Ok(Value::from_string(&i.to_string())),
+                Literal::Float(f) => Ok(Value::from_string(&f.to_string())),
                 Literal::String(s) => Ok(Value::new(s.as_bytes())),
                 Literal::Binary(b) => Ok(Value::new(b)),
             },
@@ -1101,12 +1180,6 @@ impl QueryExecutor {
         }
 
         Ok(column_names)
-    }
-}
-
-impl Default for SchemaCatalog {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

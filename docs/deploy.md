@@ -2,7 +2,7 @@
 
 Short index of deployment options. Deep detail: [deployment.md](deployment.md) and [DOCKER.md](DOCKER.md).
 
-> **Reality check:** Images and Compose files exist, but the process does not yet fully bind a production SQL/gRPC server. Treat these as the **intended** deploy paths while [milestones](milestones.md) catch up.
+> **Reality check:** `shardforge start` now binds a **TCP JSON SQL** listener. Full gRPC tonic serve, Raft clustering, and K8s/Terraform remain ahead — see [milestones](milestones.md).
 
 ## 1. Local binary (development)
 

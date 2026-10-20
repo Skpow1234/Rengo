@@ -116,12 +116,16 @@ pub struct MonitoringSection {
 
 /// Storage engine types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum StorageEngineType {
     /// RocksDB (recommended for production)
+    #[serde(alias = "RocksDB", alias = "rocks_db")]
     RocksDB,
     /// Sled (pure Rust alternative)
+    #[serde(alias = "Sled")]
     Sled,
     /// In-memory (for testing)
+    #[serde(alias = "Memory")]
     Memory,
 }
 
@@ -133,6 +137,7 @@ impl Default for StorageEngineType {
 
 /// Compression algorithms
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum CompressionType {
     /// No compression
     None,
@@ -152,6 +157,7 @@ impl Default for CompressionType {
 
 /// Log levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     /// Trace level
     Trace,
@@ -173,6 +179,7 @@ impl Default for LogLevel {
 
 /// Log formats
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum LogFormat {
     /// JSON format (structured)
     Json,
