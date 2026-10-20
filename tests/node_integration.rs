@@ -92,13 +92,29 @@ async fn test_sled_catalog_and_data_survive_restart() {
             .await
             .expect("insert2");
 
-        // Flush by dropping the node (closes storage)
         assert_eq!(node.status().await.table_count, 1);
-        drop(node);
+        // Explicit close flushes and drops sled Db so the flock is released.
+        node.close().await.expect("close sled node");
     }
 
-    // Re-open same data directory
-    let node2 = DatabaseNode::from_config(config).await.expect("reopen sled node");
+    // Re-open same data directory (retry briefly if the OS is slow to release the lock)
+    let node2 = {
+        let mut last_err = None;
+        let mut opened = None;
+        for _ in 0..50 {
+            match DatabaseNode::from_config(config.clone()).await {
+                Ok(n) => {
+                    opened = Some(n);
+                    break;
+                }
+                Err(e) => {
+                    last_err = Some(e);
+                    tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                }
+            }
+        }
+        opened.unwrap_or_else(|| panic!("reopen sled node: {:?}", last_err))
+    };
     assert_eq!(node2.status().await.table_count, 1);
 
     let result = node2

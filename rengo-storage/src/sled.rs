@@ -11,7 +11,7 @@ use super::{StorageConfig, StorageEngine, StorageStats, WriteOperation};
 
 #[cfg(feature = "sled")]
 pub struct SledEngine {
-    db: Db,
+    db: Option<Db>,
     stats: StorageStats,
 }
 
@@ -26,7 +26,13 @@ impl SledEngine {
             .open()
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
 
-        Ok(Self { db, stats: StorageStats::default() })
+        Ok(Self { db: Some(db), stats: StorageStats::default() })
+    }
+
+    fn db(&self) -> Result<&Db> {
+        self.db.as_ref().ok_or_else(|| rengo_core::RengoError::Storage {
+            source: std::io::Error::new(std::io::ErrorKind::Other, "Sled engine is closed").into(),
+        })
     }
 }
 
@@ -35,7 +41,7 @@ impl SledEngine {
 impl StorageEngine for SledEngine {
     async fn get(&self, key: &Key) -> Result<Option<Value>> {
         let result = self
-            .db
+            .db()?
             .get(key.as_slice())
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
 
@@ -43,14 +49,14 @@ impl StorageEngine for SledEngine {
     }
 
     async fn put(&self, key: Key, value: Value) -> Result<()> {
-        self.db
+        self.db()?
             .insert(key.as_slice(), value.as_slice())
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
         Ok(())
     }
 
     async fn delete(&self, key: &Key) -> Result<()> {
-        self.db
+        self.db()?
             .remove(key.as_slice())
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
         Ok(())
@@ -58,7 +64,7 @@ impl StorageEngine for SledEngine {
 
     async fn exists(&self, key: &Key) -> Result<bool> {
         let result = self
-            .db
+            .db()?
             .contains_key(key.as_slice())
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
         Ok(result)
@@ -78,7 +84,7 @@ impl StorageEngine for SledEngine {
             }
         }
 
-        self.db
+        self.db()?
             .apply_batch(batch)
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
         Ok(())
@@ -90,7 +96,7 @@ impl StorageEngine for SledEngine {
     }
 
     async fn flush(&self) -> Result<()> {
-        self.db
+        self.db()?
             .flush()
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
         Ok(())
@@ -98,20 +104,25 @@ impl StorageEngine for SledEngine {
 
     async fn compact(&self) -> Result<()> {
         // Sled doesn't have explicit compaction, but flush ensures consistency
-        self.db
+        self.db()?
             .flush()
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
         Ok(())
     }
 
     async fn close(&mut self) -> Result<()> {
-        // Sled doesn't have explicit close, Db will be dropped
+        if let Some(db) = self.db.take() {
+            db.flush()
+                .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
+            // Explicit drop releases the flock before close returns (important on macOS).
+            drop(db);
+        }
         Ok(())
     }
 
     async fn scan_prefix(&self, prefix: &[u8]) -> Result<Vec<(Key, Value)>> {
         let mut results = Vec::new();
-        for item in self.db.scan_prefix(prefix) {
+        for item in self.db()?.scan_prefix(prefix) {
             let (key, value) =
                 item.map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
             results.push((Key::new(&key), Value::new(&value)));

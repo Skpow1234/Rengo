@@ -845,43 +845,71 @@ impl QueryExecutor {
         row_data: &[Value],
     ) -> Result<bool> {
         match condition {
-            Expression::BinaryOp { left, op, right } => {
-                let left_val = self.evaluate_expression_with_row(left, table_schema, row_data)?;
-                let right_val = self.evaluate_expression_with_row(right, table_schema, row_data)?;
-
-                match op {
-                    BinaryOperator::Equal => Ok(left_val.as_ref() == right_val.as_ref()),
-                    BinaryOperator::NotEqual => Ok(left_val.as_ref() != right_val.as_ref()),
-                    BinaryOperator::LessThan => Ok(left_val.as_ref() < right_val.as_ref()),
-                    BinaryOperator::LessThanOrEqual => Ok(left_val.as_ref() <= right_val.as_ref()),
-                    BinaryOperator::GreaterThan => Ok(left_val.as_ref() > right_val.as_ref()),
-                    BinaryOperator::GreaterThanOrEqual => {
-                        Ok(left_val.as_ref() >= right_val.as_ref())
-                    }
-                    BinaryOperator::And => {
-                        let left_bool = self.value_to_bool(&left_val)?;
-                        let right_bool = self.value_to_bool(&right_val)?;
-                        Ok(left_bool && right_bool)
-                    }
-                    BinaryOperator::Or => {
-                        let left_bool = self.value_to_bool(&left_val)?;
-                        let right_bool = self.value_to_bool(&right_val)?;
-                        Ok(left_bool || right_bool)
-                    }
-                    _ => Err(RengoError::Query {
-                        message: format!("Operator {:?} not yet supported in WHERE clause", op),
-                    }),
+            Expression::BinaryOp { left, op, right } => match op {
+                // Logical ops compose conditions, not scalar values
+                BinaryOperator::And => {
+                    let left_bool = self.evaluate_condition(left, table_schema, row_data)?;
+                    let right_bool = self.evaluate_condition(right, table_schema, row_data)?;
+                    Ok(left_bool && right_bool)
                 }
-            }
+                BinaryOperator::Or => {
+                    let left_bool = self.evaluate_condition(left, table_schema, row_data)?;
+                    let right_bool = self.evaluate_condition(right, table_schema, row_data)?;
+                    Ok(left_bool || right_bool)
+                }
+                BinaryOperator::Equal
+                | BinaryOperator::NotEqual
+                | BinaryOperator::LessThan
+                | BinaryOperator::LessThanOrEqual
+                | BinaryOperator::GreaterThan
+                | BinaryOperator::GreaterThanOrEqual => {
+                    let left_val = self.evaluate_expression_with_row(left, table_schema, row_data)?;
+                    let right_val =
+                        self.evaluate_expression_with_row(right, table_schema, row_data)?;
+                    self.compare_values(&left_val, &right_val, op)
+                }
+                _ => Err(RengoError::Query {
+                    message: format!("Operator {:?} not yet supported in WHERE clause", op),
+                }),
+            },
             Expression::IsNull { expr, negated } => {
                 let val = self.evaluate_expression_with_row(expr, table_schema, row_data)?;
                 let is_null = val.as_ref().is_empty();
                 Ok(if *negated { !is_null } else { is_null })
             }
+            Expression::UnaryOp { op: UnaryOperator::Not, expr } => {
+                Ok(!self.evaluate_condition(expr, table_schema, row_data)?)
+            }
             _ => Err(RengoError::Query {
                 message: "Complex WHERE expressions not yet fully supported".to_string(),
             }),
         }
+    }
+
+    /// Compare two values using a comparison operator (numeric when both parse as numbers)
+    fn compare_values(&self, left: &Value, right: &Value, op: &BinaryOperator) -> Result<bool> {
+        let cmp = if let (Ok(l), Ok(r)) = (
+            std::str::from_utf8(left.as_ref()).ok().and_then(|s| s.parse::<f64>().ok()).ok_or(()),
+            std::str::from_utf8(right.as_ref()).ok().and_then(|s| s.parse::<f64>().ok()).ok_or(()),
+        ) {
+            l.partial_cmp(&r).unwrap_or(std::cmp::Ordering::Equal)
+        } else {
+            left.as_ref().cmp(right.as_ref())
+        };
+
+        Ok(match op {
+            BinaryOperator::Equal => cmp == std::cmp::Ordering::Equal,
+            BinaryOperator::NotEqual => cmp != std::cmp::Ordering::Equal,
+            BinaryOperator::LessThan => cmp == std::cmp::Ordering::Less,
+            BinaryOperator::LessThanOrEqual => cmp != std::cmp::Ordering::Greater,
+            BinaryOperator::GreaterThan => cmp == std::cmp::Ordering::Greater,
+            BinaryOperator::GreaterThanOrEqual => cmp != std::cmp::Ordering::Less,
+            _ => {
+                return Err(RengoError::Query {
+                    message: format!("Operator {:?} is not a comparison", op),
+                })
+            }
+        })
     }
 
     /// Evaluate an expression with access to row data

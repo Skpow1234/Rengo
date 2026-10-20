@@ -215,6 +215,21 @@ impl DatabaseNode {
         self.running.store(false, Ordering::SeqCst);
     }
 
+    /// Flush and close storage, releasing engine file locks (e.g. sled flock).
+    ///
+    /// Consumes the node. Call this before reopening the same data directory.
+    pub async fn close(self) -> Result<()> {
+        self.running.store(false, Ordering::SeqCst);
+
+        let executor = Arc::try_unwrap(self.executor).map_err(|_| {
+            RengoError::internal("Cannot close DatabaseNode while handles are still alive")
+        })?;
+        let mut executor = executor.into_inner();
+        executor.context.storage.flush().await?;
+        executor.context.storage.close().await?;
+        Ok(())
+    }
+
     fn clone_handle(&self) -> Arc<DatabaseNodeHandle> {
         Arc::new(DatabaseNodeHandle {
             executor: Arc::clone(&self.executor),

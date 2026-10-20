@@ -450,6 +450,7 @@ impl SqlParser {
             "TIMESTAMP" => Token::Timestamp,
             "JSON" => Token::Json,
             "UUID" => Token::Uuid,
+            "ON" => Token::On,
             "AND" => Token::And,
             "OR" => Token::Or,
             "LIKE" => Token::Like,
