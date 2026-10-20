@@ -26,7 +26,10 @@ impl SledEngine {
             .open()
             .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
 
-        Ok(Self { db: Some(db), stats: StorageStats::default() })
+        Ok(Self {
+            db: Some(db),
+            stats: StorageStats::default(),
+        })
     }
 
     fn db(&self) -> Result<&Db> {

@@ -863,7 +863,8 @@ impl QueryExecutor {
                 | BinaryOperator::LessThanOrEqual
                 | BinaryOperator::GreaterThan
                 | BinaryOperator::GreaterThanOrEqual => {
-                    let left_val = self.evaluate_expression_with_row(left, table_schema, row_data)?;
+                    let left_val =
+                        self.evaluate_expression_with_row(left, table_schema, row_data)?;
                     let right_val =
                         self.evaluate_expression_with_row(right, table_schema, row_data)?;
                     self.compare_values(&left_val, &right_val, op)
@@ -888,8 +889,7 @@ impl QueryExecutor {
 
     /// Compare two values using a comparison operator (numeric when both parse as numbers)
     fn compare_values(&self, left: &Value, right: &Value, op: &BinaryOperator) -> Result<bool> {
-        let left_num =
-            std::str::from_utf8(left.as_ref()).ok().and_then(|s| s.parse::<f64>().ok());
+        let left_num = std::str::from_utf8(left.as_ref()).ok().and_then(|s| s.parse::<f64>().ok());
         let right_num =
             std::str::from_utf8(right.as_ref()).ok().and_then(|s| s.parse::<f64>().ok());
 
