@@ -888,13 +888,14 @@ impl QueryExecutor {
 
     /// Compare two values using a comparison operator (numeric when both parse as numbers)
     fn compare_values(&self, left: &Value, right: &Value, op: &BinaryOperator) -> Result<bool> {
-        let cmp = if let (Ok(l), Ok(r)) = (
-            std::str::from_utf8(left.as_ref()).ok().and_then(|s| s.parse::<f64>().ok()).ok_or(()),
-            std::str::from_utf8(right.as_ref()).ok().and_then(|s| s.parse::<f64>().ok()).ok_or(()),
-        ) {
-            l.partial_cmp(&r).unwrap_or(std::cmp::Ordering::Equal)
-        } else {
-            left.as_ref().cmp(right.as_ref())
+        let left_num =
+            std::str::from_utf8(left.as_ref()).ok().and_then(|s| s.parse::<f64>().ok());
+        let right_num =
+            std::str::from_utf8(right.as_ref()).ok().and_then(|s| s.parse::<f64>().ok());
+
+        let cmp = match (left_num, right_num) {
+            (Some(l), Some(r)) => l.partial_cmp(&r).unwrap_or(std::cmp::Ordering::Equal),
+            _ => left.as_ref().cmp(right.as_ref()),
         };
 
         Ok(match op {
