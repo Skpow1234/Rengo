@@ -1,153 +1,53 @@
-# ShardForge: Distributed Database System
+# ShardForge
 
-ShardForge is an ambitious distributed database system built in Rust, designed to provide ACID transactions, SQL compatibility, and horizontal scalability through RAFT consensus and intelligent sharding. The initial release will be CLI-focused, targeting enterprise customers who need high-performance, reliable distributed data storage.
+Distributed database in Rust — ACID transactions, SQL, Raft consensus, and sharding. CLI-first, cloud-native packaging.
 
-[![Rust](https://img.shields.io/badge/Rust-1.75+-000000.svg?style=for-the-badge&logo=rust)](https://rust-lang.org/)
-[![Tokio](https://img.shields.io/badge/Tokio-Async%20Runtime-000000.svg?style=for-the-badge&logo=tokio)](https://tokio.rs/)
-[![gRPC](https://img.shields.io/badge/gRPC-Protocol%20Buffers-244c5a.svg?style=for-the-badge&logo=grpc)](https://grpc.io/)
-[![RocksDB](https://img.shields.io/badge/RocksDB-Storage-orange.svg?style=for-the-badge&logo=rocksdb)](https://rocksdb.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-SQL%20Compatible-4169e1.svg?style=for-the-badge&logo=postgresql)](https://postgresql.org/)
-[![Prometheus](https://img.shields.io/badge/Prometheus-Metrics-e6522c.svg?style=for-the-badge&logo=prometheus)](https://prometheus.io/)
-[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ed.svg?style=for-the-badge&logo=docker)](https://docker.com/)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Orchestration-326ce5.svg?style=for-the-badge&logo=kubernetes)](https://kubernetes.io/)
-[![RAFT](https://img.shields.io/badge/RAFT-Consensus-00add8.svg?style=for-the-badge&logo=raft)](https://raft.github.io/)
-[![OpenSSL](https://img.shields.io/badge/OpenSSL-Security-721412.svg?style=for-the-badge&logo=openssl)](https://openssl.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.80+-000000.svg?style=flat-square&logo=rust)](https://rust-lang.org/)
+[![Tokio](https://img.shields.io/badge/Tokio-async-000000.svg?style=flat-square&logo=tokio)](https://tokio.rs/)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg?style=flat-square)](Cargo.toml)
 
-## Quick Start
+> **Phase:** early foundation. Storage, SQL, Raft, and CLI modules exist; a fully wired listening database node is still in progress. See [docs/milestones.md](docs/milestones.md).
 
-### Using Docker (Recommended)
-
-**Prerequisites:** [Docker](https://docker.com/get-started) installed on your system.
+## Quick start
 
 ```bash
-# Create data directory
-mkdir -p data
-
-# Pull the latest image
-docker pull shardforge/shardforge:latest
-
-# Initialize database
-docker run --rm -v $(pwd)/data:/data shardforge/shardforge:latest init --single-node --data-dir /data
-
-# Start the database server
-docker run -d --name shardforge-db -v $(pwd)/data:/data -p 5432:5432 shardforge/shardforge:latest start --config /data/shardforge.toml
-
-# Check status
-docker run --rm --network container:shardforge-db shardforge/shardforge:latest status
-
-# Execute SQL queries
-docker run -it --rm --network container:shardforge-db shardforge/shardforge:latest sql "SELECT 1 as welcome"
-
-# Stop the database
-docker stop shardforge-db && docker rm shardforge-db
-```
-
-### Build from Source
-
-**Prerequisites:** [Rust 1.80+](https://rustup.rs/) and system dependencies.
-
-```bash
-# Clone and build
-git clone https://github.com/shardforge/shardforge.git
-cd shardforge
-
-# Install system dependencies (Linux)
-sudo apt-get install -y build-essential pkg-config libssl-dev clang
-
-# Build in release mode
 cargo build --release
-
-# Initialize database
 ./target/release/shardforge init --single-node --data-dir ./data
-
-# Start the database server
 ./target/release/shardforge start --config shardforge.toml
-
-# Check status
 ./target/release/shardforge status --detailed
-
-# Execute SQL queries
-./target/release/shardforge sql "SELECT 1 as welcome"
 ```
 
-### Development with Docker Compose
-
-For local development with persistent storage:
-
-```bash
-# Start development environment
-docker-compose up -d
-
-# Initialize database (first time only)
-docker-compose exec shardforge init --single-node --data-dir /data/shardforge
-
-# Check database status
-docker-compose exec shardforge status --detailed
-
-# Execute SQL queries
-docker-compose exec shardforge sql "SELECT 1 as welcome"
-
-# View logs
-docker-compose logs -f shardforge
-
-# Stop environment
-docker-compose down
-```
-
-> **Note:** ShardForge is currently in Phase 1 (Foundation) of development. The CLI and basic infrastructure are implemented, but full database server functionality, SQL engine, and distributed consensus are planned for future phases.
-
-## Current Implementation Status
-
-### Completed
-
-- Project structure and workspace organization
-- Storage engine trait abstraction
-- In-memory storage engine with full test coverage
-- Core type system (NodeId, Key, Value, etc.)
-- CLI command structure and argument parsing
-- Configuration management framework
-- Comprehensive CI/CD pipeline (6 workflows)
-- Docker containerization support
-
-### In Progress
-
-- RocksDB storage engine integration
-- Sled storage engine integration
-- Configuration loading and validation
-
-### Planned (Phase 1)
-
-- SQL parser and query planner
-- Transaction manager with MVCC
-- Server implementation (gRPC/TCP)
-- Query execution engine
-- Indexing support (B-tree, hash)
-
-### Future Phases
-
-- RAFT consensus (Phase 2)
-- Distributed sharding (Phase 2)
-- Enterprise features (Phase 3)
+Docker / Compose and platform build notes: **[Getting started](docs/getting-started.md)**.
 
 ## Documentation
 
-- **[Overview](docs/overview.md)** - Executive summary and market analysis
-- **[Architecture](docs/architecture.md)** - System design and component breakdown
-- **[Core Functionalities](docs/functionalities.md)** - RAFT consensus, sharding, transactions, SQL support, and CLI
-- **[Technical Implementation](docs/implementation.md)** - Network protocols, storage format, configuration, and error handling
-- **[Technologies](docs/technologies.md)** - Core Rust crates and dependencies
-- **[Performance](docs/performance.md)** - Benchmarking targets and optimization strategies
-- **[Security](docs/security.md)** - Authentication, authorization, and data privacy features
-- **[Deployment](docs/deployment.md)** - Installation, configuration, and monitoring
-- **[Development Roadmap](docs/roadmap.md)** - Phased development plan (24 months)
-- **[Testing Strategy](docs/testing.md)** - Unit testing, integration testing, and chaos engineering
-- **[Risk Assessment](docs/risk-assessment.md)** - Technical and market risk analysis
-- **[Success Metrics](docs/success-metrics.md)** - Goals and key performance indicators
-- **[Conclusion](docs/conclusion.md)** - Final thoughts and project outlook
+| Topic | Link |
+|-------|------|
+| Docs home | [docs/README.md](docs/README.md) |
+| Getting started | [docs/getting-started.md](docs/getting-started.md) |
+| Endpoints (ports & gRPC) | [docs/endpoints.md](docs/endpoints.md) |
+| Milestones & status | [docs/milestones.md](docs/milestones.md) |
+| Ways to deploy | [docs/deploy.md](docs/deploy.md) |
+| Docker profiles | [docs/DOCKER.md](docs/DOCKER.md) |
+| Architecture | [docs/architecture.md](docs/architecture.md) |
+| Roadmap | [docs/roadmap.md](docs/roadmap.md) |
 
-## Key Differentiators
+## What's implemented
 
-- **Rust Performance**: Memory safety + zero-cost abstractions
-- **CLI-First**: Developer-friendly tooling from day one
-- **Open Source**: Community-driven development
-- **Modern Architecture**: Built for cloud-native from ground up
+- Workspace crates: `shardforge-core`, `shardforge-config`, `shardforge-storage`
+- Pluggable storage (memory / sled / rocksdb)
+- SQL, transaction, Raft, and network modules (partial)
+- CLI, config, Docker, and CI scaffolding
+
+Full checklist: [docs/milestones.md](docs/milestones.md).
+
+## Key ideas
+
+- **Rust** — memory safety and performance for the data plane
+- **CLI-first** — `init`, `start`, `status`, `sql` from day one
+- **Open source** — MIT OR Apache-2.0
+- **Cloud-native packaging** — Docker Compose profiles and deploy docs
+
+## License
+
+MIT OR Apache-2.0 — see `Cargo.toml`.
