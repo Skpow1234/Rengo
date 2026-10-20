@@ -161,23 +161,23 @@ jobs:
           file: ./Dockerfile
           push: false
           load: true
-          tags: shardforge:ci
+          tags: rengo:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Smoke test container
         run: |
           set -euo pipefail
-          docker run --rm shardforge:ci --version
-          docker run --rm -d --name shardforge-ci -p 5432:5432 shardforge:ci
+          docker run --rm rengo:ci --version
+          docker run --rm -d --name rengo-ci -p 5432:5432 rengo:ci
           sleep 3
-          if ! docker ps | grep -q shardforge-ci; then
+          if ! docker ps | grep -q rengo-ci; then
             echo "Container exited early:"
-            docker logs shardforge-ci || true
+            docker logs rengo-ci || true
             exit 1
           fi
-          docker logs shardforge-ci
-          docker stop shardforge-ci
+          docker logs rengo-ci
+          docker stop rengo-ci
 
   # ── Required status aggregator ──────────────────────────────────────────
   ci-success:

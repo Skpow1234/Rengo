@@ -1,11 +1,11 @@
-# ShardForge Quick Fix Script
+# Rengo Quick Fix Script
 # Addresses common issues automatically
 
 param(
     [switch]$Force
 )
 
-Write-Host "🔧 ShardForge Quick Fix" -ForegroundColor Cyan
+Write-Host "🔧 Rengo Quick Fix" -ForegroundColor Cyan
 Write-Host "=======================" -ForegroundColor Cyan
 
 # Clean and update

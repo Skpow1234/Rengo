@@ -1,28 +1,28 @@
 //! Common test utilities and helpers
 
-use shardforge_core::*;
-use shardforge_config::*;
-use shardforge_storage::*;
+use rengo_core::*;
+use rengo_config::*;
+use rengo_storage::*;
 use tempfile::TempDir;
 use std::sync::Arc;
 
 /// Test environment setup
 pub struct TestEnv {
     pub temp_dir: TempDir,
-    pub config: ShardForgeConfig,
+    pub config: RengoConfig,
     pub storage_engine: Box<dyn StorageEngine>,
 }
 
 impl TestEnv {
     /// Create a new test environment with default settings
     pub async fn new() -> Result<Self> {
-        Self::with_config(ShardForgeConfig::default()).await
+        Self::with_config(RengoConfig::default()).await
     }
 
     /// Create a new test environment with custom configuration
-    pub async fn with_config(mut config: ShardForgeConfig) -> Result<Self> {
+    pub async fn with_config(mut config: RengoConfig) -> Result<Self> {
         let temp_dir = TempDir::new().map_err(|e| {
-            ShardForgeError::Internal(format!("Failed to create temp dir: {}", e))
+            RengoError::internal(format!("Failed to create temp dir: {}", e))
         })?;
 
         // Override config to use temp directory
@@ -85,14 +85,14 @@ impl TestEnv {
             match retrieved {
                 Some(actual_value) => {
                     if actual_value != *expected_value {
-                        return Err(ShardForgeError::Internal(format!(
+                        return Err(RengoError::internal(format!(
                             "Data mismatch for key {:?}: expected {:?}, got {:?}",
                             key, expected_value, actual_value
                         )));
                     }
                 }
                 None => {
-                    return Err(ShardForgeError::Internal(format!(
+                    return Err(RengoError::internal(format!(
                         "Key {:?} not found", key
                     )));
                 }
@@ -229,7 +229,7 @@ impl ConcurrentTestRunner {
                 for op_id in 0..operations_per_worker {
                     test_fn_clone(worker_id, op_id).await?;
                 }
-                Ok::<(), ShardForgeError>(())
+                Ok::<(), RengoError>(())
             });
 
             handles.push(handle);
@@ -238,7 +238,7 @@ impl ConcurrentTestRunner {
         // Wait for all workers to complete
         for handle in handles {
             handle.await.map_err(|e| {
-                ShardForgeError::Internal(format!("Task panicked: {}", e))
+                RengoError::internal(format!("Task panicked: {}", e))
             })??;
         }
 

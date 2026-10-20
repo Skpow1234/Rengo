@@ -1,4 +1,4 @@
-# ShardForge Docker Guide
+# Rengo Docker Guide
 
 ## Quick Start
 
@@ -69,12 +69,12 @@ docker-compose --profile monitoring up -d
 
 | Service | Port | Description |
 |---------|------|-------------|
-| ShardForge (Main) | 5432 | PostgreSQL protocol |
-| ShardForge (Main) | 9090 | gRPC API |
-| ShardForge (Dev) | 5433 | PostgreSQL protocol |
-| ShardForge (Dev) | 9091 | gRPC API |
-| ShardForge (Perf) | 5434 | PostgreSQL protocol |
-| ShardForge (Perf) | 9092 | gRPC API |
+| Rengo (Main) | 5432 | PostgreSQL protocol |
+| Rengo (Main) | 9090 | gRPC API |
+| Rengo (Dev) | 5433 | PostgreSQL protocol |
+| Rengo (Dev) | 9091 | gRPC API |
+| Rengo (Perf) | 5434 | PostgreSQL protocol |
+| Rengo (Perf) | 9092 | gRPC API |
 | Node 2 | 5435 | PostgreSQL protocol |
 | Node 2 | 9093 | gRPC API |
 | Node 3 | 5436 | PostgreSQL protocol |
@@ -103,13 +103,13 @@ make docker-clean         # Clean up resources
 
 - `RUST_LOG`: Log level (debug, info, warn, error)
 - `RUST_BACKTRACE`: Backtrace level (0, 1, full)
-- `SHARDFORGE_NODE_ID`: Unique node identifier
-- `SHARDFORGE_CLUSTER_SEEDS`: Cluster seed nodes
+- `RENGO_NODE_ID`: Unique node identifier
+- `RENGO_CLUSTER_SEEDS`: Cluster seed nodes
 
 ### Volumes
 
-- `shardforge-data`: Persistent data storage
-- `./shardforge.toml`: Configuration file
+- `rengo-data`: Persistent data storage
+- `./rengo.toml`: Configuration file
 - `./monitoring/`: Monitoring configuration
 
 ## Health Checks
@@ -117,7 +117,7 @@ make docker-clean         # Clean up resources
 All services include health checks that verify:
 
 - Container is running
-- ShardForge binary responds
+- Rengo binary responds
 - Service is ready to accept connections
 
 ## Resource Limits
@@ -138,7 +138,7 @@ All services include health checks that verify:
 docker-compose logs -f
 
 # Specific service
-docker-compose logs -f shardforge
+docker-compose logs -f rengo
 ```
 
 ### Check Health
@@ -148,7 +148,7 @@ docker-compose logs -f shardforge
 docker-compose ps
 
 # Health check details
-docker inspect shardforge_shardforge_1 | grep -A 10 Health
+docker inspect rengo_rengo_1 | grep -A 10 Health
 ```
 
 ### Clean Restart
@@ -184,10 +184,10 @@ make docker-scan
 make docker-secure
 
 # Manual scanning with Docker Scout
-docker scout cves shardforge:latest
+docker scout cves rengo:latest
 
 # Manual scanning with Trivy
-trivy image shardforge:latest
+trivy image rengo:latest
 ```
 
 ### Security Best Practices

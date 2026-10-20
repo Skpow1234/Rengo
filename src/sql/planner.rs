@@ -1,6 +1,6 @@
 //! Query planning and optimization
 
-use shardforge_core::{Result, ShardForgeError};
+use rengo_core::{Result, RengoError};
 
 use crate::sql::ast::*;
 use crate::sql::executor::SchemaCatalog;
@@ -99,7 +99,7 @@ impl QueryPlanner {
             Statement::Insert(stmt) => self.plan_insert(stmt),
             Statement::CreateTable(stmt) => self.plan_create_table(stmt),
             Statement::DropTable(stmt) => self.plan_drop_table(stmt),
-            _ => Err(ShardForgeError::Query {
+            _ => Err(RengoError::Query {
                 message: "Statement type not supported in planning".to_string(),
             }),
         }
@@ -107,13 +107,13 @@ impl QueryPlanner {
 
     /// Plan a SELECT statement
     fn plan_select(&self, stmt: SelectStatement) -> Result<LogicalPlan> {
-        let table_name = stmt.from.ok_or_else(|| ShardForgeError::Query {
+        let table_name = stmt.from.ok_or_else(|| RengoError::Query {
             message: "FROM clause is required".to_string(),
         })?;
 
         // Validate table exists
         if self.catalog.get_table(&table_name).is_none() {
-            return Err(ShardForgeError::Query {
+            return Err(RengoError::Query {
                 message: format!("Table '{}' does not exist", table_name),
             });
         }
@@ -130,14 +130,14 @@ impl QueryPlanner {
                             if let Expression::Column(column_name) = expr {
                                 columns.push(alias.unwrap_or(column_name));
                             } else {
-                                return Err(ShardForgeError::Query {
+                                return Err(RengoError::Query {
                                     message: "Complex expressions not yet supported in SELECT"
                                         .to_string(),
                                 });
                             }
                         }
                         SelectItem::Wildcard => {
-                            return Err(ShardForgeError::Query {
+                            return Err(RengoError::Query {
                                 message: "Cannot mix wildcard with specific columns".to_string(),
                             });
                         }
@@ -157,7 +157,7 @@ impl QueryPlanner {
     fn plan_insert(&self, stmt: InsertStatement) -> Result<LogicalPlan> {
         // Validate table exists
         if self.catalog.get_table(&stmt.table_name).is_none() {
-            return Err(ShardForgeError::Query {
+            return Err(RengoError::Query {
                 message: format!("Table '{}' does not exist", stmt.table_name),
             });
         }

@@ -1,7 +1,7 @@
 //! RAFT Consensus Implementation
 //!
 //! This module implements the RAFT consensus algorithm for distributed consensus
-//! in ShardForge. It provides strong consistency guarantees through leader election,
+//! in Rengo. It provides strong consistency guarantees through leader election,
 //! log replication, and state machine replication.
 
 pub mod config;

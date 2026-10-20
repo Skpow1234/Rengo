@@ -1,4 +1,4 @@
-# ShardForge Development Script for Windows PowerShell
+# Rengo Development Script for Windows PowerShell
 # Usage: .\scripts\dev.ps1 <command>
 
 param(
@@ -77,7 +77,7 @@ switch ($Command) {
     }
 
     "help" {
-        Write-Host "ShardForge Development Commands:" -ForegroundColor Yellow
+        Write-Host "Rengo Development Commands:" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "format     - Format code with cargo fmt"
         Write-Host "check      - Run all checks (format, clippy, test)"

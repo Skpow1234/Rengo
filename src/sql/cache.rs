@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use std::collections::hash_map::DefaultHasher;
 use std::time::{Duration, SystemTime};
 
-use shardforge_core::Result;
+use rengo_core::Result;
 
 use crate::sql::executor::QueryResult;
 
@@ -294,7 +294,7 @@ impl CacheStatistics {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shardforge_core::Value;
+    use rengo_core::Value;
 
     #[test]
     fn test_cache_basic_operations() {

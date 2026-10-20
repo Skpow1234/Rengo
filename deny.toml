@@ -1,4 +1,4 @@
-# Cargo-deny configuration for ShardForge
+# Cargo-deny configuration for Rengo
 # This file configures cargo-deny to check for security vulnerabilities,
 # license compatibility, and other issues in dependencies.
 

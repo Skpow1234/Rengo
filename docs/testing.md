@@ -2,7 +2,7 @@
 
 ## Testing Philosophy
 
-ShardForge employs a multi-layered testing approach that ensures correctness, performance, and reliability across all system components. Our testing strategy follows the principle of "shift-left testing" with comprehensive automation and continuous validation.
+Rengo employs a multi-layered testing approach that ensures correctness, performance, and reliability across all system components. Our testing strategy follows the principle of "shift-left testing" with comprehensive automation and continuous validation.
 
 ### Quality Gates
 
@@ -79,10 +79,10 @@ mod integration_tests {
         let docker = Cli::default();
         let mut nodes = vec![];
 
-        // Start multiple ShardForge nodes in containers
+        // Start multiple Rengo nodes in containers
         for i in 1..=3 {
             let image = RunnableImage::from(
-                GenericImage::new("shardforge", "latest")
+                GenericImage::new("rengo", "latest")
                     .with_env_var("NODE_ID", format!("node-{}", i))
                     .with_env_var("CLUSTER_SIZE", "3")
             );
@@ -310,4 +310,4 @@ jobs:
         file: ./cobertura.xml
 ```
 
-This comprehensive testing strategy ensures ShardForge maintains high quality, performance, and reliability throughout its development lifecycle.
+This comprehensive testing strategy ensures Rengo maintains high quality, performance, and reliability throughout its development lifecycle.

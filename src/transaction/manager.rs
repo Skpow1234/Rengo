@@ -4,8 +4,8 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use shardforge_core::{Result, ShardForgeError, Timestamp, TransactionId};
-use shardforge_storage::MVCCStorage;
+use rengo_core::{Result, RengoError, Timestamp, TransactionId};
+use rengo_storage::MVCCStorage;
 use tokio::sync::{Mutex, RwLock};
 
 /// Transaction state
@@ -216,13 +216,13 @@ impl LockManager {
                 lock_info.waiters.retain(|&id| id != transaction_id);
                 wait_for.get_mut(&transaction_id).unwrap().remove(&lock_info.holder);
 
-                return Err(ShardForgeError::Transaction {
+                return Err(RengoError::Transaction {
                     message: "Deadlock detected".to_string(),
                 });
             }
 
             // Wait for lock (in real implementation, this would be a proper wait/notify mechanism)
-            return Err(ShardForgeError::Transaction {
+            return Err(RengoError::Transaction {
                 message: "Resource is locked, would need to wait".to_string(),
             });
         } else {
@@ -390,7 +390,7 @@ impl TransactionManager {
         let transaction_arc = {
             let transactions = self.transactions.read().await;
             transactions.get(&transaction_id).cloned().ok_or_else(|| {
-                ShardForgeError::Transaction {
+                RengoError::Transaction {
                     message: format!("Transaction {:?} not found", transaction_id),
                 }
             })?
@@ -400,7 +400,7 @@ impl TransactionManager {
 
         // Check transaction state
         if !transaction.can_proceed() {
-            return Err(ShardForgeError::Transaction {
+            return Err(RengoError::Transaction {
                 message: format!(
                     "Transaction {:?} cannot be committed in state {:?}",
                     transaction_id, transaction.state
@@ -411,7 +411,7 @@ impl TransactionManager {
         // Check for timeout
         if transaction.is_timed_out() {
             transaction.state = TransactionState::Aborted;
-            return Err(ShardForgeError::Transaction {
+            return Err(RengoError::Transaction {
                 message: "Transaction timed out".to_string(),
             });
         }
@@ -423,8 +423,8 @@ impl TransactionManager {
         for (key, write_intent) in &transaction.write_set {
             self.mvcc_storage
                 .write(
-                    shardforge_core::Key::new(key.as_bytes()),
-                    write_intent.value.as_ref().map(|v| shardforge_core::Value::new(v)),
+                    rengo_core::Key::new(key.as_bytes()),
+                    write_intent.value.as_ref().map(|v| rengo_core::Value::new(v)),
                     transaction_id,
                     write_intent.timestamp,
                 )
@@ -453,7 +453,7 @@ impl TransactionManager {
         let transaction_arc = {
             let transactions = self.transactions.read().await;
             transactions.get(&transaction_id).cloned().ok_or_else(|| {
-                ShardForgeError::Transaction {
+                RengoError::Transaction {
                     message: format!("Transaction {:?} not found", transaction_id),
                 }
             })?
@@ -544,7 +544,7 @@ impl Default for LockManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shardforge_storage::MVCCStorage;
+    use rengo_storage::MVCCStorage;
 
     #[tokio::test]
     async fn test_transaction_lifecycle() {

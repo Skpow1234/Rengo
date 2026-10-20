@@ -162,7 +162,7 @@ impl ObserverNode {
 
 ### Multi-Strategy Sharding Architecture
 
-ShardForge implements multiple sharding strategies with automatic switching and hybrid approaches for optimal performance:
+Rengo implements multiple sharding strategies with automatic switching and hybrid approaches for optimal performance:
 
 ```rust
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -314,7 +314,7 @@ impl ShardSplitter {
 
 ### Distributed Transaction Coordinator
 
-ShardForge implements a sophisticated distributed transaction system with multiple protocols for different consistency requirements:
+Rengo implements a sophisticated distributed transaction system with multiple protocols for different consistency requirements:
 
 ```rust
 #[derive(Debug, Clone)]
@@ -588,7 +588,7 @@ impl DeadlockDetector {
 
 ### Comprehensive SQL Support
 
-ShardForge provides full PostgreSQL-compatible SQL support with extensions for distributed operations:
+Rengo provides full PostgreSQL-compatible SQL support with extensions for distributed operations:
 
 #### Core SQL Features (Phase 1)
 
@@ -814,89 +814,89 @@ pub trait CostModel {
 
 ```bash
 # Cluster Lifecycle Management
-shardforge cluster init --nodes 3 --replication-factor 3 --data-dir /data
-shardforge cluster join --cluster seed-node:5432 --node-id node-2
-shardforge cluster leave --node-id node-2
-shardforge cluster decommission --node-id node-old --drain-timeout 300s
-shardforge cluster status [--detailed] [--json]
-shardforge cluster topology [--visualize]
+rengo cluster init --nodes 3 --replication-factor 3 --data-dir /data
+rengo cluster join --cluster seed-node:5432 --node-id node-2
+rengo cluster leave --node-id node-2
+rengo cluster decommission --node-id node-old --drain-timeout 300s
+rengo cluster status [--detailed] [--json]
+rengo cluster topology [--visualize]
 
 # Node Operations
-shardforge node start --config node.toml
-shardforge node stop [--graceful] [--timeout 30s]
-shardforge node restart --rolling
-shardforge node health [--check raft] [--check storage]
-shardforge node metrics [--format prometheus] [--interval 10s]
+rengo node start --config node.toml
+rengo node stop [--graceful] [--timeout 30s]
+rengo node restart --rolling
+rengo node health [--check raft] [--check storage]
+rengo node metrics [--format prometheus] [--interval 10s]
 
 # Database Schema Management
-shardforge schema create --name myschema --database mydb
-shardforge schema list --database mydb
-shardforge schema diff --source dev --target prod
-shardforge schema migrate --file migration.sql --dry-run
+rengo schema create --name myschema --database mydb
+rengo schema list --database mydb
+rengo schema diff --source dev --target prod
+rengo schema migrate --file migration.sql --dry-run
 
 # Table Operations
-shardforge table create --ddl "CREATE TABLE users (...)" --database mydb
-shardforge table alter --table users --add-column "age INTEGER"
-shardforge table truncate --table logs --cascade
-shardforge table analyze --table sales --sample-rate 0.1
-shardforge table vacuum --table archive --aggressive
+rengo table create --ddl "CREATE TABLE users (...)" --database mydb
+rengo table alter --table users --add-column "age INTEGER"
+rengo table truncate --table logs --cascade
+rengo table analyze --table sales --sample-rate 0.1
+rengo table vacuum --table archive --aggressive
 
 # Index Management
-shardforge index create --table users --columns "email,created_at" --type btree
-shardforge index list --table users [--detailed]
-shardforge index rebuild --index users_email_idx --concurrently
-shardforge index drop --index old_index --if-exists
+rengo index create --table users --columns "email,created_at" --type btree
+rengo index list --table users [--detailed]
+rengo index rebuild --index users_email_idx --concurrently
+rengo index drop --index old_index --if-exists
 
 # Data Import/Export
-shardforge import csv --file data.csv --table users --format "id:integer,name:string"
-shardforge export json --query "SELECT * FROM users" --output users.json --compressed
-shardforge copy --from "postgresql://..." --to mydb.users --transform script.lua
+rengo import csv --file data.csv --table users --format "id:integer,name:string"
+rengo export json --query "SELECT * FROM users" --output users.json --compressed
+rengo copy --from "postgresql://..." --to mydb.users --transform script.lua
 
 # Advanced Query Operations
-shardforge query execute --sql "SELECT * FROM users" --database mydb --format table
-shardforge query explain --sql "SELECT * FROM large_table" --analyze
-shardforge query profile --sql "SELECT * FROM users WHERE age > 21" --iterations 100
-shardforge query cancel --query-id abc-123
+rengo query execute --sql "SELECT * FROM users" --database mydb --format table
+rengo query explain --sql "SELECT * FROM large_table" --analyze
+rengo query profile --sql "SELECT * FROM users WHERE age > 21" --iterations 100
+rengo query cancel --query-id abc-123
 
 # Backup & Recovery (Enterprise)
-shardforge backup create --database mydb --type full --compression zstd --encryption aes256
-shardforge backup create --database mydb --type incremental --parent backup-001
-shardforge backup list [--database mydb] [--type incremental]
-shardforge backup verify --backup-id backup-001 --checksum
-shardforge backup restore --backup-id backup-001 --target newdb --point-in-time "2024-01-01 12:00:00"
-shardforge backup cleanup --retention 30d --dry-run
+rengo backup create --database mydb --type full --compression zstd --encryption aes256
+rengo backup create --database mydb --type incremental --parent backup-001
+rengo backup list [--database mydb] [--type incremental]
+rengo backup verify --backup-id backup-001 --checksum
+rengo backup restore --backup-id backup-001 --target newdb --point-in-time "2024-01-01 12:00:00"
+rengo backup cleanup --retention 30d --dry-run
 
 # Replication & Consistency
-shardforge replication status --database mydb
-shardforge replication lag --follow --alert-threshold 5s
-shardforge replication pause --shard shard-001
-shardforge replication resume --all
+rengo replication status --database mydb
+rengo replication lag --follow --alert-threshold 5s
+rengo replication pause --shard shard-001
+rengo replication resume --all
 
 # Monitoring & Observability
-shardforge monitor dashboard --port 8080 --auth-token ***
-shardforge monitor alerts list [--active-only]
-shardforge monitor alerts acknowledge --alert-id alert-001
-shardforge monitor metrics collect --duration 1h --output metrics.json
-shardforge monitor traces query --service query-engine --duration 1h
+rengo monitor dashboard --port 8080 --auth-token ***
+rengo monitor alerts list [--active-only]
+rengo monitor alerts acknowledge --alert-id alert-001
+rengo monitor metrics collect --duration 1h --output metrics.json
+rengo monitor traces query --service query-engine --duration 1h
 
 # Security & Access Control
-shardforge auth user create --username admin --role superuser
-shardforge auth role create --name analyst --privileges "SELECT,INSERT"
-shardforge auth grant --role analyst --database sales --table reports
-shardforge auth audit --user admin --since "2024-01-01" --format csv
+rengo auth user create --username admin --role superuser
+rengo auth role create --name analyst --privileges "SELECT,INSERT"
+rengo auth grant --role analyst --database sales --table reports
+rengo auth audit --user admin --since "2024-01-01" --format csv
 
 # Configuration Management
-shardforge config get --key storage.block_cache_size
-shardforge config set --key raft.election_timeout --value 200ms --validate
-shardforge config diff --source current --target production
-shardforge config apply --file new-config.toml --dry-run --rollback-on-error
+rengo config get --key storage.block_cache_size
+rengo config set --key raft.election_timeout --value 200ms --validate
+rengo config diff --source current --target production
+rengo config apply --file new-config.toml --dry-run --rollback-on-error
 
 # Diagnostics & Troubleshooting
-shardforge debug cluster --collect-logs --duration 5m --output debug-bundle.tar.gz
-shardforge debug query --slow-threshold 1s --last 24h
-shardforge debug memory --heap-profile --output heap.prof
-shardforge debug network --latency-matrix --format heatmap
-shardforge debug storage --consistency-check --repair
+rengo debug cluster --collect-logs --duration 5m --output debug-bundle.tar.gz
+rengo debug query --slow-threshold 1s --last 24h
+rengo debug memory --heap-profile --output heap.prof
+rengo debug network --latency-matrix --format heatmap
+rengo debug storage --consistency-check --repair
 ```
 
 ### Advanced CLI Architecture
@@ -1020,7 +1020,7 @@ impl CliPlugin for KubernetesPlugin {
         vec![
             CommandDefinition {
                 name: "deploy".to_string(),
-                description: "Deploy ShardForge cluster to Kubernetes".to_string(),
+                description: "Deploy Rengo cluster to Kubernetes".to_string(),
                 args: vec![
                     ArgDefinition {
                         name: "namespace".to_string(),

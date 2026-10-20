@@ -3,7 +3,7 @@
 // Generated protobuf code will be included here when protoc is available
 #[cfg(feature = "grpc-enabled")]
 pub mod proto {
-    tonic::include_proto!("shardforge.rpc");
+    tonic::include_proto!("rengo.rpc");
 }
 
 // Stub implementation when protoc is not available
@@ -275,7 +275,7 @@ pub use proto::*;
 /// Convert from internal types to protobuf types
 pub mod conversion {
     use super::proto;
-    use shardforge_core::{Key, Value};
+    use rengo_core::{Key, Value};
 
     /// Convert internal Value to protobuf Value
     pub fn value_to_proto(value: &Value) -> proto::Value {

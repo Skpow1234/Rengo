@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document summarizes the RAFT consensus algorithm implementation for ShardForge Phase 2. The implementation provides a solid foundation for distributed consensus, enabling strong consistency across multiple nodes in the cluster.
+This document summarizes the RAFT consensus algorithm implementation for Rengo Phase 2. The implementation provides a solid foundation for distributed consensus, enabling strong consistency across multiple nodes in the cluster.
 
 ## Completed Components
 
@@ -330,7 +330,7 @@ Complete error types for all RAFT operations:
 ## Usage Example
 
 ```rust
-use shardforge::raft::*;
+use rengo::raft::*;
 
 // Create storage
 let storage = Arc::new(MemoryStorage::new());
@@ -349,7 +349,7 @@ let mut node = RaftNode::new(
     1,  // node ID
     storage,
     config,
-    PathBuf::from("/var/lib/shardforge/snapshots")
+    PathBuf::from("/var/lib/rengo/snapshots")
 ).await?;
 
 // Add peers
@@ -374,7 +374,7 @@ for entry in entries {
 
 ## Conclusion
 
-The RAFT consensus implementation provides a solid foundation for ShardForge's distributed core. With the core algorithms, state management, log handling, and persistence layer complete, the implementation is ready for:
+The RAFT consensus implementation provides a solid foundation for Rengo's distributed core. With the core algorithms, state management, log handling, and persistence layer complete, the implementation is ready for:
 
 1. **Network Integration**: Connect nodes via gRPC
 2. **Full Election Logic**: Complete leader election state machine

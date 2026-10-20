@@ -1,27 +1,27 @@
 [workspace]
 members = [
-    "shardforge-core",
-    "shardforge-config",
-    "shardforge-storage",
+    "rengo-core",
+    "rengo-config",
+    "rengo-storage",
 ]
 
 [package]
-name = "shardforge"
+name = "rengo"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.80"
-description = "ShardForge Distributed Database System"
-authors = ["ShardForge Team"]
+description = "Rengo Distributed Database System"
+authors = ["Rengo Team"]
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/shardforge/shardforge"
-repository = "https://github.com/shardforge/shardforge"
+homepage = "https://github.com/Skpow1234/Rengo"
+repository = "https://github.com/Skpow1234/Rengo"
 readme = "README.MD"
 keywords = ["database", "distributed", "rust", "postgresql", "raft"]
 categories = ["database", "concurrency", "data-structures"]
 
 [[bin]]
-name = "shardforge"
-path = "bin/shardforge.rs"
+name = "rengo"
+path = "bin/rengo.rs"
 
 [[test]]
 name = "sql_integration"
@@ -45,15 +45,15 @@ harness = false
 
 [features]
 default = ["sled"]
-rocksdb = ["dep:rocksdb", "shardforge-storage/rocksdb"]
-sled = ["dep:sled", "shardforge-storage/sled"]
+rocksdb = ["dep:rocksdb", "rengo-storage/rocksdb"]
+sled = ["dep:sled", "rengo-storage/sled"]
 grpc-enabled = []
 
 [dependencies]
 # Workspace crates
-shardforge-core = { path = "shardforge-core" }
-shardforge-config = { path = "shardforge-config" }
-shardforge-storage = { path = "shardforge-storage", default-features = false }
+rengo-core = { path = "rengo-core" }
+rengo-config = { path = "rengo-config" }
+rengo-storage = { path = "rengo-storage", default-features = false }
 
 # External dependencies
 tokio.workspace = true

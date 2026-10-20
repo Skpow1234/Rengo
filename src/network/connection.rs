@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use shardforge_core::{NodeId, Result, ShardForgeError};
+use rengo_core::{NodeId, Result, RengoError};
 use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 
@@ -36,13 +36,13 @@ impl ConnectionPool {
 
         // Create new connection
         let endpoint = Endpoint::from_shared(address.to_string())
-            .map_err(|e| ShardForgeError::Network {
+            .map_err(|e| RengoError::Network {
                 message: format!("Invalid endpoint address {}: {}", address, e),
             })?
             .timeout(Duration::from_secs(self.config.connection_timeout_sec as u64))
             .keep_alive_timeout(Duration::from_secs(self.config.keep_alive_interval_sec as u64));
 
-        let channel = endpoint.connect().await.map_err(|e| ShardForgeError::Network {
+        let channel = endpoint.connect().await.map_err(|e| RengoError::Network {
             message: format!("Failed to connect to {}: {}", address, e),
         })?;
 

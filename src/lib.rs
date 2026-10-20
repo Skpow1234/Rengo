@@ -1,11 +1,11 @@
-//! # ShardForge Distributed Database
+//! # Rengo Distributed Database
 //!
 //! A high-performance, distributed database system built in Rust, designed for
 //! strong consistency, horizontal scalability, and PostgreSQL compatibility.
 //!
 //! ## Architecture
 //!
-//! ShardForge follows a layered architecture with clear separation of concerns:
+//! Rengo follows a layered architecture with clear separation of concerns:
 //!
 //! - **Core Layer**: Core types, error handling, and utilities
 //! - **Storage Layer**: Pluggable storage engines and persistence
@@ -20,11 +20,11 @@
 #![deny(unsafe_code)]
 
 // Re-export workspace crates
-pub use shardforge_config as config;
-pub use shardforge_core as core;
+pub use rengo_config as config;
+pub use rengo_core as core;
 // Re-export commonly used types for convenience
-pub use shardforge_core::*;
-pub use shardforge_storage as storage;
+pub use rengo_core::*;
+pub use rengo_storage as storage;
 
 // Local modules
 pub mod network;

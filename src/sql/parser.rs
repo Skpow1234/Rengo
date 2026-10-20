@@ -2,7 +2,7 @@
 
 // use std::collections::HashMap; // TODO: Remove when implementing symbol table
 
-use shardforge_core::{Result, ShardForgeError};
+use rengo_core::{Result, RengoError};
 
 use crate::sql::ast::*;
 
@@ -254,7 +254,7 @@ impl SqlParser {
                         chars.next();
                         tokens.push(Token::NotEquals);
                     } else {
-                        return Err(ShardForgeError::Parse {
+                        return Err(RengoError::Parse {
                             message: format!("Unexpected character: {}", ch),
                         });
                     }
@@ -338,19 +338,19 @@ impl SqlParser {
 
                     if is_float {
                         let float_val: f64 =
-                            number.parse().map_err(|_| ShardForgeError::Parse {
+                            number.parse().map_err(|_| RengoError::Parse {
                                 message: "Invalid float literal".to_string(),
                             })?;
                         tokens.push(Token::FloatLit(float_val));
                     } else {
-                        let int_val: i64 = number.parse().map_err(|_| ShardForgeError::Parse {
+                        let int_val: i64 = number.parse().map_err(|_| RengoError::Parse {
                             message: "Invalid integer literal".to_string(),
                         })?;
                         tokens.push(Token::IntegerLit(int_val));
                     }
                 }
                 _ => {
-                    return Err(ShardForgeError::Parse {
+                    return Err(RengoError::Parse {
                         message: format!("Unexpected character: {}", ch),
                     });
                 }
@@ -451,7 +451,7 @@ impl SqlParser {
             Token::Begin => self.parse_begin_statement(),
             Token::Commit => self.parse_commit_statement(),
             Token::Rollback => self.parse_rollback_statement(),
-            token => Err(ShardForgeError::Parse {
+            token => Err(RengoError::Parse {
                 message: format!("Unexpected token at start of statement: {:?}", token),
             }),
         }
@@ -464,7 +464,7 @@ impl SqlParser {
         match self.current_token() {
             Token::Table => self.parse_create_table_statement(),
             Token::Index => self.parse_create_index_statement(),
-            token => Err(ShardForgeError::Parse {
+            token => Err(RengoError::Parse {
                 message: format!("Expected TABLE or INDEX after CREATE, found: {:?}", token),
             }),
         }
@@ -641,7 +641,7 @@ impl SqlParser {
                 self.advance();
                 Ok(DataType::Text)
             }
-            token => Err(ShardForgeError::Parse {
+            token => Err(RengoError::Parse {
                 message: format!("Expected data type, found: {:?}", token),
             }),
         }
@@ -663,7 +663,7 @@ impl SqlParser {
             self.advance();
             Ok(())
         } else {
-            Err(ShardForgeError::Parse {
+            Err(RengoError::Parse {
                 message: format!("Expected {:?}, found {:?}", expected, self.current_token()),
             })
         }
@@ -676,7 +676,7 @@ impl SqlParser {
                 self.advance();
                 Ok(name)
             }
-            token => Err(ShardForgeError::Parse {
+            token => Err(RengoError::Parse {
                 message: format!("Expected identifier, found: {:?}", token),
             }),
         }
@@ -689,7 +689,7 @@ impl SqlParser {
                 self.advance();
                 Ok(value)
             }
-            token => Err(ShardForgeError::Parse {
+            token => Err(RengoError::Parse {
                 message: format!("Expected integer literal, found: {:?}", token),
             }),
         }
@@ -702,7 +702,7 @@ impl SqlParser {
         match self.current_token() {
             Token::Table => self.parse_drop_table_statement(),
             Token::Index => self.parse_drop_index_statement(),
-            token => Err(ShardForgeError::Parse {
+            token => Err(RengoError::Parse {
                 message: format!("Expected TABLE or INDEX after DROP, found: {:?}", token),
             }),
         }
@@ -767,12 +767,12 @@ impl SqlParser {
                 let constraint = self.parse_table_constraint()?;
                 AlterTableAction::AddConstraint(constraint)
             } else {
-                return Err(ShardForgeError::Parse {
+                return Err(RengoError::Parse {
                     message: "Expected COLUMN or CONSTRAINT after ADD".to_string(),
                 });
             }
         } else {
-            return Err(ShardForgeError::Parse {
+            return Err(RengoError::Parse {
                 message: "Only ADD actions are currently supported in ALTER TABLE".to_string(),
             });
         };
@@ -1150,7 +1150,7 @@ impl SqlParser {
 
                 Ok(TableConstraint::Check { expression })
             }
-            token => Err(ShardForgeError::Parse {
+            token => Err(RengoError::Parse {
                 message: format!(
                     "Expected constraint type (PRIMARY, FOREIGN, UNIQUE, CHECK), found: {:?}",
                     token
@@ -1373,7 +1373,7 @@ impl SqlParser {
                 self.consume_token(Token::RightParen)?;
                 Ok(expr)
             }
-            token => Err(ShardForgeError::Parse {
+            token => Err(RengoError::Parse {
                 message: format!("Unexpected token in expression: {:?}", token),
             }),
         }

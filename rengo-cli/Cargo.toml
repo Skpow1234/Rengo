@@ -1,0 +1,36 @@
+[package]
+name = "rengo-cli"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+description = "Command-line interface for Rengo distributed database"
+authors = ["Rengo Team"]
+license = "MIT OR Apache-2.0"
+
+[[bin]]
+name = "rengo"
+path = "src/main.rs"
+
+[dependencies]
+# Workspace dependencies
+tokio.workspace = true
+tracing.workspace = true
+clap.workspace = true
+serde_json.workspace = true
+
+# Local dependencies
+rengo = { path = ".." }
+rengo-core = { path = "../rengo-core" }
+rengo-config = { path = "../rengo-config" }
+rengo-storage = { path = "../rengo-storage" }
+
+# Additional CLI dependencies
+dialoguer.workspace = true
+console.workspace = true
+indicatif.workspace = true
+comfy-table.workspace = true
+rustyline = "14.0"
+dirs = "5.0"
+
+[dev-dependencies]
+tempfile = "3.8"

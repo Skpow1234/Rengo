@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use shardforge_core::{Result, ShardForgeError, Timestamp, TransactionId};
+use rengo_core::{Result, RengoError, Timestamp, TransactionId};
 
 /// MVCC transaction context
 pub struct MVCCTransactionContext {
@@ -139,7 +139,7 @@ impl ConflictDetector {
         let mut conflicts = Vec::new();
 
         let committing_rw_set = self.active_transactions.get(&transaction_id).ok_or_else(|| {
-            ShardForgeError::Transaction {
+            RengoError::Transaction {
                 message: format!("Transaction {:?} not found in conflict detector", transaction_id),
             }
         })?;

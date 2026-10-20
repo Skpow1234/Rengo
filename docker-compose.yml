@@ -1,30 +1,30 @@
-# ShardForge - Complete Docker Compose Configuration
+# Rengo - Complete Docker Compose Configuration
 # Supports development, production, and performance testing
 
 services:
-  # Main ShardForge database service
-  shardforge:
+  # Main Rengo database service
+  rengo:
     build:
       context: .
       dockerfile: Dockerfile
       cache_from:
-        - shardforge:latest
-    image: shardforge:alpine-secure
+        - rengo:latest
+    image: rengo:alpine-secure
     ports:
       - "5432:5432"  # PostgreSQL protocol
       - "9090:9090"  # gRPC API
     volumes:
-      - shardforge-data:/data/shardforge
-      - ./shardforge.toml:/etc/shardforge/config.toml:ro
+      - rengo-data:/data/rengo
+      - ./rengo.toml:/etc/rengo/config.toml:ro
     environment:
       - RUST_LOG=info
       - RUST_BACKTRACE=1
-      - SHARDFORGE_NODE_ID=node-1
+      - RENGO_NODE_ID=node-1
     networks:
-      - shardforge-net
+      - rengo-net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "/shardforge", "--version"]
+      test: ["CMD", "/rengo", "--version"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -40,7 +40,7 @@ services:
     profiles: ["default", "production"]
 
   # Development mode with hot reload
-  shardforge-dev:
+  rengo-dev:
     build:
       context: .
       dockerfile: Dockerfile
@@ -49,19 +49,19 @@ services:
       - "5433:5432"
       - "9091:9090"
     volumes:
-      - .:/usr/src/shardforge
-      - shardforge-dev-data:/data/shardforge
+      - .:/usr/src/rengo
+      - rengo-dev-data:/data/rengo
     environment:
       - RUST_LOG=debug
       - RUST_BACKTRACE=full
-      - SHARDFORGE_NODE_ID=dev-node
+      - RENGO_NODE_ID=dev-node
     networks:
-      - shardforge-net
-    command: ["cargo", "run", "--bin", "shardforge", "--", "start"]
+      - rengo-net
+    command: ["cargo", "run", "--bin", "rengo", "--", "start"]
     profiles: ["dev"]
 
   # Performance testing with monitoring
-  shardforge-perf:
+  rengo-perf:
     build:
       context: .
       dockerfile: Dockerfile
@@ -69,15 +69,15 @@ services:
       - "5434:5432"
       - "9092:9090"
     volumes:
-      - shardforge-perf-data:/data/shardforge
+      - rengo-perf-data:/data/rengo
     environment:
       - RUST_LOG=warn
       - RUST_BACKTRACE=1
-      - SHARDFORGE_NODE_ID=perf-node
+      - RENGO_NODE_ID=perf-node
     networks:
-      - shardforge-net
+      - rengo-net
     healthcheck:
-      test: ["CMD", "/shardforge", "--version"]
+      test: ["CMD", "/rengo", "--version"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -93,7 +93,7 @@ services:
     profiles: ["perf"]
 
   # Multi-node cluster setup
-  shardforge-node2:
+  rengo-node2:
     build:
       context: .
       dockerfile: Dockerfile
@@ -101,18 +101,18 @@ services:
       - "5435:5432"
       - "9093:9090"
     volumes:
-      - shardforge-node2-data:/data/shardforge
+      - rengo-node2-data:/data/rengo
     environment:
       - RUST_LOG=info
       - RUST_BACKTRACE=1
-      - SHARDFORGE_NODE_ID=node-2
-      - SHARDFORGE_CLUSTER_SEEDS=shardforge:9090
+      - RENGO_NODE_ID=node-2
+      - RENGO_CLUSTER_SEEDS=rengo:9090
     networks:
-      - shardforge-net
+      - rengo-net
     depends_on:
-      - shardforge
+      - rengo
     healthcheck:
-      test: ["CMD", "/shardforge", "--version"]
+      test: ["CMD", "/rengo", "--version"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -127,7 +127,7 @@ services:
           cpus: '0.5'
     profiles: ["cluster"]
 
-  shardforge-node3:
+  rengo-node3:
     build:
       context: .
       dockerfile: Dockerfile
@@ -135,19 +135,19 @@ services:
       - "5436:5432"
       - "9094:9090"
     volumes:
-      - shardforge-node3-data:/data/shardforge
+      - rengo-node3-data:/data/rengo
     environment:
       - RUST_LOG=info
       - RUST_BACKTRACE=1
-      - SHARDFORGE_NODE_ID=node-3
-      - SHARDFORGE_CLUSTER_SEEDS=shardforge:9090,shardforge-node2:9090
+      - RENGO_NODE_ID=node-3
+      - RENGO_CLUSTER_SEEDS=rengo:9090,rengo-node2:9090
     networks:
-      - shardforge-net
+      - rengo-net
     depends_on:
-      - shardforge
-      - shardforge-node2
+      - rengo
+      - rengo-node2
     healthcheck:
-      test: ["CMD", "/shardforge", "--version"]
+      test: ["CMD", "/rengo", "--version"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -170,7 +170,7 @@ services:
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:
-      - shardforge-net
+      - rengo-net
     profiles: ["monitoring"]
 
   grafana:
@@ -182,22 +182,22 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     networks:
-      - shardforge-net
+      - rengo-net
     depends_on:
       - prometheus
     profiles: ["monitoring"]
 
 networks:
-  shardforge-net:
+  rengo-net:
     driver: bridge
     ipam:
       config:
         - subnet: 172.20.0.0/16
 
 volumes:
-  shardforge-data:
-  shardforge-dev-data:
-  shardforge-perf-data:
-  shardforge-node2-data:
-  shardforge-node3-data:
+  rengo-data:
+  rengo-dev-data:
+  rengo-perf-data:
+  rengo-node2-data:
+  rengo-node3-data:
   grafana-data:

@@ -76,7 +76,7 @@ test_container_startup() {
         local attempt=1
 
         while [ $attempt -le $max_attempts ]; do
-            if docker exec "$name" shardforge --version > /dev/null 2>&1; then
+            if docker exec "$name" rengo --version > /dev/null 2>&1; then
                 log_success "Container $tag started successfully"
                 docker stop "$name" > /dev/null 2>&1
                 docker rm "$name" > /dev/null 2>&1
@@ -111,22 +111,22 @@ compare_builds() {
     local failed_builds=0
 
     # Original Dockerfile
-    if measure_build_time "$PROJECT_DIR/Dockerfile" "shardforge:benchmark-original" "Original Dockerfile"; then
-        test_container_startup "shardforge:benchmark-original" "test-original" "5432"
+    if measure_build_time "$PROJECT_DIR/Dockerfile" "rengo:benchmark-original" "Original Dockerfile"; then
+        test_container_startup "rengo:benchmark-original" "test-original" "5432"
     else
         ((failed_builds++))
     fi
 
     # Fast Dockerfile
-    if measure_build_time "$PROJECT_DIR/Dockerfile.fast" "shardforge:benchmark-fast" "Fast Dockerfile"; then
-        test_container_startup "shardforge:benchmark-fast" "test-fast" "5433"
+    if measure_build_time "$PROJECT_DIR/Dockerfile.fast" "rengo:benchmark-fast" "Fast Dockerfile"; then
+        test_container_startup "rengo:benchmark-fast" "test-fast" "5433"
     else
         ((failed_builds++))
     fi
 
     # Clean up test images
     log_info "Cleaning up test images..."
-    docker rmi shardforge:benchmark-original shardforge:benchmark-fast 2>/dev/null || true
+    docker rmi rengo:benchmark-original rengo:benchmark-fast 2>/dev/null || true
 
     # Show results
     echo ""

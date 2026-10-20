@@ -1,6 +1,6 @@
-# ShardForge Build Guide
+# Rengo Build Guide
 
-This document explains how to build ShardForge on different platforms and handle various build scenarios.
+This document explains how to build Rengo on different platforms and handle various build scenarios.
 
 ## Quick Start
 
@@ -27,7 +27,7 @@ cargo test --workspace --features sled --no-default-features
 
 ## Storage Engine Features
 
-ShardForge supports multiple storage engines:
+Rengo supports multiple storage engines:
 
 ### Sled (Default, Windows-friendly)
 
@@ -279,7 +279,7 @@ make test
 
 ## Contributing
 
-When contributing to ShardForge:
+When contributing to Rengo:
 
 1. **Always test with both storage engines**:
 

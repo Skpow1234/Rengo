@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# ShardForge Code Formatting Script
+# Rengo Code Formatting Script
 # This script ensures consistent code formatting across the project
 
 set -e
 
-echo "🔧 ShardForge Code Formatting"
+echo "🔧 Rengo Code Formatting"
 echo "=============================="
 
 # Check if we're in the project root

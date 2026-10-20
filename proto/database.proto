@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package shardforge.rpc;
+package rengo.rpc;
 
 // Core database service
 service DatabaseService {

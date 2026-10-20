@@ -4,7 +4,7 @@
 
 ### Multi-Protocol Architecture
 
-ShardForge implements a hybrid network architecture supporting multiple protocols for different use cases:
+Rengo implements a hybrid network architecture supporting multiple protocols for different use cases:
 
 ```rust
 pub enum NetworkProtocol {
@@ -119,10 +119,10 @@ impl ConnectionManager {
 
 ### Hierarchical Storage Layout
 
-ShardForge implements a sophisticated multi-tier storage layout optimized for performance, reliability, and operational efficiency:
+Rengo implements a sophisticated multi-tier storage layout optimized for performance, reliability, and operational efficiency:
 
 ```bash
-/data/shardforge/
+/data/rengo/
 ├── cluster/
 │   ├── config/
 │   │   ├── cluster.toml              # Cluster-wide configuration
@@ -291,7 +291,7 @@ impl MetadataManager {
 
 ### Hierarchical Configuration System
 
-ShardForge implements a multi-layered configuration system supporting TOML files, environment variables, and runtime overrides:
+Rengo implements a multi-layered configuration system supporting TOML files, environment variables, and runtime overrides:
 
 ```rust
 use config::{Config, ConfigError, Environment, File};
@@ -326,17 +326,17 @@ impl ClusterConfig {
             // Load default configuration
             .add_source(File::from_str(DEFAULT_CONFIG, config::FileFormat::Toml))
             // Load system-wide configuration
-            .add_source(File::with_name("/etc/shardforge/config.toml").required(false))
+            .add_source(File::with_name("/etc/rengo/config.toml").required(false))
             // Load user configuration
-            .add_source(File::with_name("~/.shardforge/config.toml").required(false))
-            // Load environment variables with prefix SHARDFORGE_
-            .add_source(Environment::with_prefix("SHARDFORGE").separator("_"))
+            .add_source(File::with_name("~/.rengo/config.toml").required(false))
+            // Load environment variables with prefix RENGO_
+            .add_source(Environment::with_prefix("RENGO").separator("_"))
             // Load local configuration file
-            .add_source(File::with_name("shardforge.toml").required(false));
+            .add_source(File::with_name("rengo.toml").required(false));
 
         // Apply environment-specific overrides
-        if let Ok(env) = std::env::var("SHARDFORGE_ENV") {
-            builder = builder.add_source(File::with_name(&format!("shardforge.{}.toml", env)).required(false));
+        if let Ok(env) = std::env::var("RENGO_ENV") {
+            builder = builder.add_source(File::with_name(&format!("rengo.{}.toml", env)).required(false));
         }
 
         let config = builder.build()?;
@@ -347,7 +347,7 @@ impl ClusterConfig {
         use notify::{RecommendedWatcher, RecursiveMode, Watcher};
         use tokio::sync::RwLock;
 
-        let config_path = Path::new("shardforge.toml");
+        let config_path = Path::new("rengo.toml");
         let config = Arc::new(RwLock::new(self));
 
         let mut watcher = RecommendedWatcher::new(move |res| {
@@ -383,11 +383,11 @@ impl ClusterConfig {
 ### Configuration File Format
 
 ```toml
-# shardforge.toml - Main configuration file
+# rengo.toml - Main configuration file
 [cluster]
 name = "production-cluster"
 node_id = "node-1"
-data_directory = "/var/lib/shardforge"
+data_directory = "/var/lib/rengo"
 bind_address = "0.0.0.0:5432"
 advertise_address = "10.0.0.1:5432"
 cluster_members = [
@@ -425,9 +425,9 @@ compression_level = 6
 
 [security]
 tls_enabled = true
-certificate_path = "/etc/shardforge/certs/server.crt"
-private_key_path = "/etc/shardforge/certs/server.key"
-ca_certificate_path = "/etc/shardforge/certs/ca.crt"
+certificate_path = "/etc/rengo/certs/server.crt"
+private_key_path = "/etc/rengo/certs/server.key"
+ca_certificate_path = "/etc/rengo/certs/ca.crt"
 client_auth_required = false
 cipher_suites = ["TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"]
 
@@ -486,7 +486,7 @@ impl ClusterConfig {
 
 ### Comprehensive Error Hierarchy
 
-ShardForge implements a structured error hierarchy with context propagation, observability, and automated recovery:
+Rengo implements a structured error hierarchy with context propagation, observability, and automated recovery:
 
 ```rust
 use std::fmt;

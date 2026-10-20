@@ -1,8 +1,8 @@
-# ShardForge Pipeline and Build Summary
+# Rengo Pipeline and Build Summary
 
 ## Overview
 
-This document summarizes the fixes and improvements made to the ShardForge project's build system, CI/CD pipeline, and warning handling.
+This document summarizes the fixes and improvements made to the Rengo project's build system, CI/CD pipeline, and warning handling.
 
 ## Issues Fixed
 
@@ -12,7 +12,7 @@ This document summarizes the fixes and improvements made to the ShardForge proje
 - **Solution**: Changed default storage engine from `rocksdb` to `sled` for better Windows compatibility
 - **Files Modified**:
   - `Cargo.toml` - Updated default features
-  - `shardforge-storage/Cargo.toml` - Updated default features
+  - `rengo-storage/Cargo.toml` - Updated default features
 
 ### 2. Code Formatting Issues
 
@@ -75,7 +75,7 @@ This document summarizes the fixes and improvements made to the ShardForge proje
 ### Project Configuration
 
 - **`Cargo.toml`** - Changed default features from `rocksdb` to `sled`
-- **`shardforge-storage/Cargo.toml`** - Updated default features
+- **`rengo-storage/Cargo.toml`** - Updated default features
 
 ### Docker Optimization
 
@@ -147,10 +147,10 @@ cargo test --workspace --features rocksdb --no-default-features
 
 ```bash
 # Build optimized Docker image
-docker build -t shardforge:latest .
+docker build -t rengo:latest .
 
 # Build fast Docker image (cargo-chef)
-docker build -f Dockerfile.fast -t shardforge:fast .
+docker build -f Dockerfile.fast -t rengo:fast .
 
 # Run with docker-compose
 docker-compose up -d
@@ -159,7 +159,7 @@ docker-compose up -d
 docker-compose -f docker-compose.perf.yml --profile perf up -d
 
 # Build with Buildx for better caching
-docker buildx build --cache-from shardforge:builder --cache-to shardforge:builder --load -t shardforge:cached .
+docker buildx build --cache-from rengo:builder --cache-to rengo:builder --load -t rengo:cached .
 ```
 
 ## Benefits

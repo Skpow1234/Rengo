@@ -1,9 +1,9 @@
 //! Performance benchmarks for storage operations
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use shardforge_config::StorageEngineType;
-use shardforge_core::{Key, Value};
-use shardforge_storage::{StorageConfig, StorageEngine, StorageEngineFactory, WriteOperation};
+use rengo_config::StorageEngineType;
+use rengo_core::{Key, Value};
+use rengo_storage::{StorageConfig, StorageEngine, StorageEngineFactory, WriteOperation};
 use tempfile::TempDir;
 
 fn bench_storage_operations(c: &mut Criterion) {

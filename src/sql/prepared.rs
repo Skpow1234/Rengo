@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use shardforge_core::{Result, ShardForgeError};
+use rengo_core::{Result, RengoError};
 
 use crate::sql::ast::*;
 use crate::sql::parser::SqlParser;
@@ -60,7 +60,7 @@ impl PreparedStatementManager {
     pub fn prepare(&mut self, id: PreparedStatementId, sql: String) -> Result<PreparedStatementId> {
         // Check if statement with this ID already exists
         if self.statements.contains_key(&id) {
-            return Err(ShardForgeError::Query {
+            return Err(RengoError::Query {
                 message: format!("Prepared statement '{}' already exists", id),
             });
         }
@@ -104,14 +104,14 @@ impl PreparedStatementManager {
         parameters: Vec<Literal>,
     ) -> Result<Statement> {
         let prepared = self.statements.get_mut(id).ok_or_else(|| {
-            ShardForgeError::Query {
+            RengoError::Query {
                 message: format!("Prepared statement '{}' not found", id),
             }
         })?;
 
         // Validate parameter count
         if parameters.len() != prepared.parameters.len() {
-            return Err(ShardForgeError::Query {
+            return Err(RengoError::Query {
                 message: format!(
                     "Expected {} parameters, got {}",
                     prepared.parameters.len(),
@@ -133,7 +133,7 @@ impl PreparedStatementManager {
     /// Deallocate a prepared statement
     pub fn deallocate(&mut self, id: &PreparedStatementId) -> Result<()> {
         if self.statements.remove(id).is_none() {
-            return Err(ShardForgeError::Query {
+            return Err(RengoError::Query {
                 message: format!("Prepared statement '{}' not found", id),
             });
         }

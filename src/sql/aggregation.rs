@@ -1,6 +1,6 @@
 //! Aggregate function implementation
 
-use shardforge_core::{Result, ShardForgeError, Value};
+use rengo_core::{Result, RengoError, Value};
 use std::collections::HashMap;
 
 use crate::sql::ast::Expression;
@@ -146,7 +146,7 @@ impl AggregateAccumulator {
             }
         }
 
-        Err(ShardForgeError::Query {
+        Err(RengoError::Query {
             message: format!("Cannot convert value to number for aggregation"),
         })
     }

@@ -1,10 +1,10 @@
 # Default config baked into the container image
 [cluster]
 name = "docker-cluster"
-data_directory = "/tmp/shardforge-data"
+data_directory = "/tmp/rengo-data"
 
 [node]
-name = "shardforge-docker"
+name = "rengo-docker"
 bind_address = "0.0.0.0:5432"
 max_connections = 100
 connection_timeout_sec = 30
@@ -33,4 +33,4 @@ max_files = 5
 enabled = true
 bind_address = "0.0.0.0:9090"
 tracing_enabled = false
-service_name = "shardforge"
+service_name = "rengo"

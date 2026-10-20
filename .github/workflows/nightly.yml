@@ -54,8 +54,8 @@ jobs:
           MIRIFLAGS: -Zmiri-disable-isolation
         run: |
           cargo miri setup
-          cargo miri test --package shardforge-core --lib
-          cargo miri test --package shardforge-storage --features sled --no-default-features --lib
+          cargo miri test --package rengo-core --lib
+          cargo miri test --package rengo-storage --features sled --no-default-features --lib
 
   benches:
     name: Benchmarks (sled)

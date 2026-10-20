@@ -1,4 +1,4 @@
-# ShardForge documentation
+# Rengo documentation
 
 Start here if you are new to the project.
 

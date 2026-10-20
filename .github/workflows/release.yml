@@ -74,16 +74,16 @@ jobs:
       run: |
         cd target/${{ matrix.target }}/release
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          7z a ../../../shardforge-${{ matrix.name }}-${{ github.ref_name }}.zip shardforge.exe
+          7z a ../../../rengo-${{ matrix.name }}-${{ github.ref_name }}.zip rengo.exe
         else
-          tar -czf ../../../shardforge-${{ matrix.name }}-${{ github.ref_name }}.tar.gz shardforge
+          tar -czf ../../../rengo-${{ matrix.name }}-${{ github.ref_name }}.tar.gz rengo
         fi
 
     - name: Upload release asset
       uses: actions/upload-artifact@v4
       with:
-        name: shardforge-${{ matrix.name }}-${{ github.ref_name }}
-        path: shardforge-${{ matrix.name }}-${{ github.ref_name }}.*
+        name: rengo-${{ matrix.name }}-${{ github.ref_name }}
+        path: rengo-${{ matrix.name }}-${{ github.ref_name }}.*
 
   # Build and push Docker images
   # NOTE: This job requires DOCKERHUB_USERNAME and DOCKERHUB_TOKEN secrets to be configured
@@ -128,7 +128,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: shardforge/shardforge
+        images: rengo/rengo
         tags: |
           type=ref,event=tag
           type=raw,value=latest,enable={{is_default_branch}}
@@ -163,7 +163,7 @@ jobs:
     - name: Create release notes
       run: |
         # Generate release notes from changelog or commit messages
-        echo "# ShardForge ${{ github.ref_name }}" > release-notes.md
+        echo "# Rengo ${{ github.ref_name }}" > release-notes.md
         echo "" >> release-notes.md
         echo "## What's Changed" >> release-notes.md
         echo "" >> release-notes.md
@@ -178,7 +178,7 @@ jobs:
         echo "" >> release-notes.md
         echo "### Docker" >> release-notes.md
         echo "\`\`\`bash" >> release-notes.md
-        echo "docker pull shardforge/shardforge:${{ github.ref_name }}" >> release-notes.md
+        echo "docker pull rengo/rengo:${{ github.ref_name }}" >> release-notes.md
         echo "\`\`\`" >> release-notes.md
 
     - name: Create GitHub release

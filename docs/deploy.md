@@ -1,8 +1,8 @@
-# Ways to deploy ShardForge
+# Ways to deploy Rengo
 
 Short index of deployment options. Deep detail: [deployment.md](deployment.md) and [DOCKER.md](DOCKER.md).
 
-> **Reality check:** `shardforge start` now binds a **TCP JSON SQL** listener. Full gRPC tonic serve, Raft clustering, and K8s/Terraform remain ahead — see [milestones](milestones.md).
+> **Reality check:** `rengo start` now binds a **TCP JSON SQL** listener. Full gRPC tonic serve, Raft clustering, and K8s/Terraform remain ahead — see [milestones](milestones.md).
 
 ## 1. Local binary (development)
 
@@ -10,23 +10,23 @@ Best for hacking on the Rust workspace.
 
 ```bash
 cargo build --release
-./target/release/shardforge init --single-node --data-dir ./data
-./target/release/shardforge start --config shardforge.toml
+./target/release/rengo init --single-node --data-dir ./data
+./target/release/rengo start --config rengo.toml
 ```
 
-- Config: [`shardforge.toml`](../shardforge.toml)
+- Config: [`rengo.toml`](../rengo.toml)
 - Build help: [build.md](build.md), [getting-started.md](getting-started.md)
 
 ## 2. Docker (single container)
 
 ```bash
-docker build -t shardforge:local .
+docker build -t rengo:local .
 # or: make docker-build
 
-docker run -d --name shardforge-db \
-  -v shardforge-data:/data \
+docker run -d --name rengo-db \
+  -v rengo-data:/data \
   -p 5432:5432 -p 9090:9090 \
-  shardforge:local start --config /etc/shardforge/config.toml
+  rengo:local start --config /etc/rengo/config.toml
 ```
 
 Default ports: **5432** (node), **9090** (metrics / intended gRPC). See [endpoints.md](endpoints.md).
@@ -50,8 +50,8 @@ Details: [DOCKER.md](DOCKER.md).
 Documented in [deployment.md](deployment.md):
 
 ```bash
-shardforge cluster bootstrap --node-id node-001 --bind 10.0.1.10:5432 ...
-shardforge cluster join --node-id node-002 --seed-nodes "10.0.1.10:5432" ...
+rengo cluster bootstrap --node-id node-001 --bind 10.0.1.10:5432 ...
+rengo cluster join --node-id node-002 --seed-nodes "10.0.1.10:5432" ...
 ```
 
 Cluster join/bootstrap commands are still largely TODO in the CLI.
@@ -72,6 +72,6 @@ Compose `monitoring` profile + [`monitoring/prometheus.yml`](../monitoring/prome
 
 ## Recommended path today
 
-1. **Develop:** local `cargo run` / release binary + `shardforge.toml` (`storage.engine = "memory"` or `sled`).
+1. **Develop:** local `cargo run` / release binary + `rengo.toml` (`storage.engine = "memory"` or `sled`).
 2. **Package:** Docker / Compose production profile.
 3. **Cluster / K8s / Terraform:** follow [deployment.md](deployment.md) as design intent; implement after the composition root and Raft transport land ([milestones.md](milestones.md)).

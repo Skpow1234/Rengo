@@ -1,8 +1,8 @@
 @echo off
-REM ShardForge Code Formatting Script for Windows
+REM Rengo Code Formatting Script for Windows
 REM This script ensures consistent code formatting across the project
 
-echo 🔧 ShardForge Code Formatting
+echo 🔧 Rengo Code Formatting
 echo ==============================
 
 REM Check if we're in the project root

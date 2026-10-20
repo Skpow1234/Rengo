@@ -1,8 +1,8 @@
 //! Comprehensive SQL integration tests
 
-use shardforge::sql::*;
-use shardforge_core::*;
-use shardforge_storage::{MemoryEngine, MVCCStorage};
+use rengo::sql::*;
+use rengo_core::*;
+use rengo_storage::{MemoryEngine, MVCCStorage};
 
 /// Helper function to create a test execution context
 async fn create_test_context() -> ExecutionContext {

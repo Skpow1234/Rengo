@@ -1,6 +1,6 @@
-# ShardForge
+# Rengo
 
-Distributed database in Rust — ACID transactions, SQL, Raft consensus, and sharding. CLI-first, cloud-native packaging.
+**Rengo** (連合 — federation / union) is a distributed database in Rust — ACID transactions, SQL, Raft consensus, and sharding. CLI-first, cloud-native packaging.
 
 [![Rust](https://img.shields.io/badge/Rust-1.80+-000000.svg?style=flat-square&logo=rust)](https://rust-lang.org/)
 [![Tokio](https://img.shields.io/badge/Tokio-async-000000.svg?style=flat-square&logo=tokio)](https://tokio.rs/)
@@ -12,9 +12,9 @@ Distributed database in Rust — ACID transactions, SQL, Raft consensus, and sha
 
 ```bash
 cargo build --release
-./target/release/shardforge init --single-node --data-dir ./data
-./target/release/shardforge start --config shardforge.toml
-./target/release/shardforge status --detailed
+./target/release/rengo init --single-node --data-dir ./data
+./target/release/rengo start --config rengo.toml
+./target/release/rengo status --detailed
 ```
 
 Docker / Compose and platform build notes: **[Getting started](docs/getting-started.md)**.
@@ -35,7 +35,7 @@ Docker / Compose and platform build notes: **[Getting started](docs/getting-star
 
 ## What's implemented
 
-- Workspace crates: `shardforge-core`, `shardforge-config`, `shardforge-storage`
+- Workspace crates: `rengo-core`, `rengo-config`, `rengo-storage`
 - Pluggable storage (memory / sled / rocksdb)
 - SQL, transaction, Raft, and network modules (partial)
 - CLI, config, Docker, and CI scaffolding

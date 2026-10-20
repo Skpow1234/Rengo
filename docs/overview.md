@@ -1,10 +1,10 @@
-# ShardForge: Enterprise-Grade Distributed Database System
+# Rengo: Enterprise-Grade Distributed Database System
 
 ## Executive Summary
 
-ShardForge is a next-generation distributed database system built entirely in Rust, designed to deliver PostgreSQL-compatible SQL, ACID transactions, and horizontal scalability through RAFT consensus and intelligent sharding. Unlike traditional databases built with legacy languages, ShardForge leverages Rust's memory safety, zero-cost abstractions, and fearless concurrency to deliver enterprise-grade performance and reliability.
+Rengo is a next-generation distributed database system built entirely in Rust, designed to deliver PostgreSQL-compatible SQL, ACID transactions, and horizontal scalability through RAFT consensus and intelligent sharding. Unlike traditional databases built with legacy languages, Rengo leverages Rust's memory safety, zero-cost abstractions, and fearless concurrency to deliver enterprise-grade performance and reliability.
 
-The system is architected for the cloud-native era, with first-class support for Kubernetes, containerization, and modern DevOps practices. Starting with a developer-focused CLI experience, ShardForge evolves into a comprehensive platform for mission-critical applications requiring strong consistency, high availability, and global scale.
+The system is architected for the cloud-native era, with first-class support for Kubernetes, containerization, and modern DevOps practices. Starting with a developer-focused CLI experience, Rengo evolves into a comprehensive platform for mission-critical applications requiring strong consistency, high availability, and global scale.
 
 ## Vision & Mission
 
@@ -184,7 +184,7 @@ The global database market is experiencing unprecedented growth, driven by:
 
 ### Competitive Differentiation Matrix
 
-| Feature | CockroachDB | TiDB | YugabyteDB | ShardForge |
+| Feature | CockroachDB | TiDB | YugabyteDB | Rengo |
 |---------|-------------|------|------------|------------|
 | **Language** | Go | Go | C++ | **Rust** |
 | **Memory Safety** | No | No | No | **Yes** |
@@ -198,6 +198,6 @@ The global database market is experiencing unprecedented growth, driven by:
 
 ## Conclusion
 
-ShardForge represents a unique opportunity in the database market, combining Rust's technical advantages with PostgreSQL's ecosystem familiarity and modern operational requirements. The project's focus on developer experience, operational excellence, and enterprise-grade reliability positions it for significant market success.
+Rengo represents a unique opportunity in the database market, combining Rust's technical advantages with PostgreSQL's ecosystem familiarity and modern operational requirements. The project's focus on developer experience, operational excellence, and enterprise-grade reliability positions it for significant market success.
 
 The combination of memory safety, high performance, and modern architecture addresses critical pain points in the distributed database space while the open source approach ensures community adoption and ecosystem growth.

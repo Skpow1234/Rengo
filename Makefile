@@ -1,8 +1,8 @@
-# ShardForge Development Commands
+# Rengo Development Commands
 .PHONY: help format check test clean docker-build docker-up docker-down docker-dev docker-perf docker-cluster
 
 help: ## Show this help message
-	@echo "ShardForge Development Commands:"
+	@echo "Rengo Development Commands:"
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
 
@@ -59,26 +59,26 @@ coverage: ## Generate coverage report
 # Docker commands
 docker-build: ## Build Docker image
 	@echo "🐳 Building Docker image..."
-	docker build -t shardforge:alpine-secure .
+	docker build -t rengo:alpine-secure .
 
-docker-up: ## Start ShardForge in production mode
-	@echo "🚀 Starting ShardForge..."
+docker-up: ## Start Rengo in production mode
+	@echo "🚀 Starting Rengo..."
 	docker-compose --profile production up -d
 
-docker-down: ## Stop all ShardForge services
-	@echo "🛑 Stopping ShardForge..."
+docker-down: ## Stop all Rengo services
+	@echo "🛑 Stopping Rengo..."
 	docker-compose down
 
-docker-dev: ## Start ShardForge in development mode
-	@echo "🔧 Starting ShardForge in development mode..."
+docker-dev: ## Start Rengo in development mode
+	@echo "🔧 Starting Rengo in development mode..."
 	docker-compose --profile dev up -d
 
-docker-perf: ## Start ShardForge in performance testing mode
-	@echo "⚡ Starting ShardForge in performance mode..."
+docker-perf: ## Start Rengo in performance testing mode
+	@echo "⚡ Starting Rengo in performance mode..."
 	docker-compose --profile perf up -d
 
-docker-cluster: ## Start ShardForge cluster (3 nodes)
-	@echo "🌐 Starting ShardForge cluster..."
+docker-cluster: ## Start Rengo cluster (3 nodes)
+	@echo "🌐 Starting Rengo cluster..."
 	docker-compose --profile cluster up -d
 
 docker-monitoring: ## Start monitoring stack (Prometheus + Grafana)
@@ -96,7 +96,7 @@ docker-clean: ## Clean up Docker resources
 
 docker-scan: ## Scan Docker image for vulnerabilities
 	@echo "🔍 Scanning Docker image for vulnerabilities..."
-	docker scout cves shardforge:alpine-secure
+	docker scout cves rengo:alpine-secure
 
 
 docker-secure: ## Build and scan Docker image for security

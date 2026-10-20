@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use shardforge_core::{Result, ShardForgeError};
+use rengo_core::{Result, RengoError};
 use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
 
@@ -12,7 +12,7 @@ use crate::network::protocol::proto;
 use crate::network::NetworkConfig;
 use crate::server::DatabaseNode;
 
-/// gRPC server for ShardForge database
+/// gRPC server for Rengo database
 pub struct GrpcServer {
     config: NetworkConfig,
     service: Arc<DatabaseServiceImpl>,
@@ -36,7 +36,7 @@ impl GrpcServer {
     /// ready; prefer `DatabaseNode::start` for the TCP SQL protocol.
     pub async fn start(&self) -> Result<()> {
         let addr: SocketAddr =
-            self.config.bind_address.parse().map_err(|e| ShardForgeError::Config {
+            self.config.bind_address.parse().map_err(|e| RengoError::Config {
                 message: format!("Invalid bind address: {}", e),
             })?;
 
@@ -48,7 +48,7 @@ impl GrpcServer {
         }
         println!(
             "Note: enable `--features grpc-enabled` with protoc for full tonic serve; \
-             use `shardforge start` for the TCP SQL listener"
+             use `rengo start` for the TCP SQL listener"
         );
 
         if let Some(_shutdown_rx) = self.shutdown_signal.read().await.as_ref() {

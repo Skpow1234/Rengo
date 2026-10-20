@@ -196,7 +196,7 @@ cargo-audit = "0.20"           # Security vulnerability scanner
 ### Docker Support
 
 ```dockerfile
-# Multi-stage Docker build for ShardForge
+# Multi-stage Docker build for Rengo
 FROM rust:1.80-slim AS builder
 
 # Install build dependencies
@@ -206,7 +206,7 @@ RUN apt-get update && apt-get install -y \
     clang \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/src/shardforge
+WORKDIR /usr/src/rengo
 
 # Copy dependency manifests
 COPY Cargo.toml Cargo.lock ./
@@ -232,27 +232,27 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN useradd --create-home --shell /bin/bash shardforge
+RUN useradd --create-home --shell /bin/bash rengo
 
 # Copy binary from builder stage
-COPY --from=builder /usr/src/shardforge/target/x86_64-unknown-linux-gnu/release/shardforge /usr/local/bin/
+COPY --from=builder /usr/src/rengo/target/x86_64-unknown-linux-gnu/release/rengo /usr/local/bin/
 
 # Create data directories
-RUN mkdir -p /data/shardforge && chown -R shardforge:shardforge /data/shardforge
+RUN mkdir -p /data/rengo && chown -R rengo:rengo /data/rengo
 
 # Switch to non-root user
-USER shardforge
-WORKDIR /data/shardforge
+USER rengo
+WORKDIR /data/rengo
 
 # Expose ports
 EXPOSE 5432 9090
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD shardforge health --timeout 10s
+    CMD rengo health --timeout 10s
 
 # Default command
-CMD ["shardforge", "start"]
+CMD ["rengo", "start"]
 ```
 
 ### Docker Compose for Development
@@ -260,49 +260,49 @@ CMD ["shardforge", "start"]
 ```yaml
 version: '3.8'
 services:
-  shardforge-node1:
+  rengo-node1:
     build: .
     ports:
       - "5432:5432"
       - "9090:9090"
     volumes:
-      - ./data/node1:/data/shardforge
-      - ./config/node1.toml:/etc/shardforge/config.toml
+      - ./data/node1:/data/rengo
+      - ./config/node1.toml:/etc/rengo/config.toml
     environment:
       - RUST_LOG=info
-      - SHARDFORGE_NODE_ID=node-1
+      - RENGO_NODE_ID=node-1
     networks:
-      - shardforge-net
+      - rengo-net
     depends_on:
       - etcd
 
-  shardforge-node2:
+  rengo-node2:
     build: .
     ports:
       - "5433:5432"
       - "9091:9090"
     volumes:
-      - ./data/node2:/data/shardforge
-      - ./config/node2.toml:/etc/shardforge/config.toml
+      - ./data/node2:/data/rengo
+      - ./config/node2.toml:/etc/rengo/config.toml
     environment:
       - RUST_LOG=info
-      - SHARDFORGE_NODE_ID=node-2
+      - RENGO_NODE_ID=node-2
     networks:
-      - shardforge-net
+      - rengo-net
 
-  shardforge-node3:
+  rengo-node3:
     build: .
     ports:
       - "5434:5432"
       - "9092:9090"
     volumes:
-      - ./data/node3:/data/shardforge
-      - ./config/node3.toml:/etc/shardforge/config.toml
+      - ./data/node3:/data/rengo
+      - ./config/node3.toml:/etc/rengo/config.toml
     environment:
       - RUST_LOG=info
-      - SHARDFORGE_NODE_ID=node-3
+      - RENGO_NODE_ID=node-3
     networks:
-      - shardforge-net
+      - rengo-net
 
   etcd:
     image: quay.io/coreos/etcd:v3.5.9
@@ -310,10 +310,10 @@ services:
     ports:
       - "2379:2379"
     networks:
-      - shardforge-net
+      - rengo-net
 
 networks:
-  shardforge-net:
+  rengo-net:
     driver: bridge
 ```
 
@@ -323,36 +323,36 @@ networks:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: shardforge-cluster
+  name: rengo-cluster
   labels:
-    app: shardforge
+    app: rengo
 spec:
-  serviceName: shardforge
+  serviceName: rengo
   replicas: 3
   selector:
     matchLabels:
-      app: shardforge
+      app: rengo
   template:
     metadata:
       labels:
-        app: shardforge
+        app: rengo
     spec:
       containers:
-      - name: shardforge
-        image: shardforge:latest
+      - name: rengo
+        image: rengo:latest
         ports:
         - containerPort: 5432
           name: sql
         - containerPort: 9090
           name: metrics
         env:
-        - name: SHARDFORGE_NODE_ID
+        - name: RENGO_NODE_ID
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
         volumeMounts:
         - name: data
-          mountPath: /data/shardforge
+          mountPath: /data/rengo
         livenessProbe:
           httpGet:
             path: /health

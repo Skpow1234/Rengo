@@ -1,14 +1,14 @@
-//! gRPC client for connecting to other ShardForge nodes
+//! gRPC client for connecting to other Rengo nodes
 
 // use std::time::Duration; // TODO: Remove when implementing timeout functionality
 
-use shardforge_core::{NodeId, Result, ShardForgeError};
+use rengo_core::{NodeId, Result, RengoError};
 use tonic::transport::Channel;
 
 use crate::network::protocol::proto;
 use crate::network::{ConnectionPool, NetworkConfig};
 
-/// gRPC client for ShardForge database
+/// gRPC client for Rengo database
 pub struct DatabaseClient {
     pool: ConnectionPool,
     client: proto::database_service_client::DatabaseServiceClient<Channel>,
@@ -40,7 +40,7 @@ impl DatabaseClient {
         };
 
         let response =
-            self.client.execute_query(request).await.map_err(|e| ShardForgeError::Network {
+            self.client.execute_query(request).await.map_err(|e| RengoError::Network {
                 message: format!("Query execution failed: {}", e),
             })?;
 
@@ -64,7 +64,7 @@ impl DatabaseClient {
             self.client
                 .begin_transaction(request)
                 .await
-                .map_err(|e| ShardForgeError::Network {
+                .map_err(|e| RengoError::Network {
                     message: format!("Transaction begin failed: {}", e),
                 })?;
 
@@ -80,7 +80,7 @@ impl DatabaseClient {
         let request = proto::CommitRequest { transaction_id };
 
         let response = self.client.commit_transaction(request).await.map_err(|e| {
-            ShardForgeError::Network {
+            RengoError::Network {
                 message: format!("Transaction commit failed: {}", e),
             }
         })?;
@@ -97,7 +97,7 @@ impl DatabaseClient {
         let request = proto::RollbackRequest { transaction_id };
 
         let response = self.client.rollback_transaction(request).await.map_err(|e| {
-            ShardForgeError::Network {
+            RengoError::Network {
                 message: format!("Transaction rollback failed: {}", e),
             }
         })?;
@@ -113,7 +113,7 @@ impl DatabaseClient {
         let request = proto::StatusRequest { include_metrics };
 
         let response = self.client.get_cluster_status(request).await.map_err(|e| {
-            ShardForgeError::Network {
+            RengoError::Network {
                 message: format!("Cluster status request failed: {}", e),
             }
         })?;
@@ -131,7 +131,7 @@ impl DatabaseClient {
         let request = proto::HeartbeatRequest { node_id, status };
 
         let response =
-            self.client.heartbeat(request).await.map_err(|e| ShardForgeError::Network {
+            self.client.heartbeat(request).await.map_err(|e| RengoError::Network {
                 message: format!("Heartbeat failed: {}", e),
             })?;
 
@@ -146,7 +146,7 @@ impl DatabaseClient {
         let request = proto::TopologyRequest { include_stats };
 
         let response = self.client.get_cluster_topology(request).await.map_err(|e| {
-            ShardForgeError::Network {
+            RengoError::Network {
                 message: format!("Topology request failed: {}", e),
             }
         })?;

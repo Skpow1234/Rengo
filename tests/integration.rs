@@ -1,8 +1,8 @@
 //! Full system integration tests
 
-use shardforge_config::*;
-use shardforge_core::*;
-use shardforge_storage::*;
+use rengo_config::*;
+use rengo_core::*;
+use rengo_storage::*;
 use tempfile::TempDir;
 
 #[tokio::test]
@@ -124,7 +124,7 @@ async fn test_concurrent_workload_simulation() {
 
     let config = StorageConfig::default();
     let engine = StorageEngineFactory::create(
-        shardforge_config::StorageEngineType::Memory,
+        rengo_config::StorageEngineType::Memory,
         &config,
         temp_dir.path(),
     )
@@ -199,7 +199,7 @@ async fn test_error_handling_and_recovery() {
 
     let config = StorageConfig::default();
     let mut engine = StorageEngineFactory::create(
-        shardforge_config::StorageEngineType::Memory,
+        rengo_config::StorageEngineType::Memory,
         &config,
         temp_dir.path(),
     )
@@ -250,7 +250,7 @@ async fn test_system_performance_baseline() {
 
     let config = StorageConfig::default();
     let mut engine = StorageEngineFactory::create(
-        shardforge_config::StorageEngineType::Memory,
+        rengo_config::StorageEngineType::Memory,
         &config,
         temp_dir.path(),
     )

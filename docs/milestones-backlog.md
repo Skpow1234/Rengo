@@ -1,4 +1,4 @@
-# ShardForge milestone backlog
+# Rengo milestone backlog
 
 Generated from a full-repo code audit (TODOs, stubs, docs vs code, SQL/Raft/storage/network/CI gaps) plus granular module improvements.
 
@@ -17,9 +17,9 @@ These were delivered in the single-node wiring pass; kept here for traceability.
 1. [x] Ship DatabaseNode composition root wiring config, storage, SQL, and transactions
 2. [x] Bind TCP SQL listener from DatabaseNode::start on configured address
 3. [x] Serve newline-delimited JSON SQL protocol on the node bind port
-4. [x] Wire CLI `shardforge start` to open config and call DatabaseNode::start
-5. [x] Wire CLI `shardforge sql` to execute against an in-process DatabaseNode
-6. [x] Wire CLI `shardforge status` to report storage engine and table count from config
+4. [x] Wire CLI `rengo start` to open config and call DatabaseNode::start
+5. [x] Wire CLI `rengo sql` to execute against an in-process DatabaseNode
+6. [x] Wire CLI `rengo status` to report storage engine and table count from config
 7. [x] Persist table schemas under __catalog__table__* keys as JSON
 8. [x] Persist catalog table name list under __catalog__tables
 9. [x] Reload durable catalog on DatabaseNode open
@@ -66,7 +66,7 @@ These were delivered in the single-node wiring pass; kept here for traceability.
 25. [ ] [Raft] Raft election/replication/commit Prometheus metrics
 26. [ ] [Raft] Property tests for AppendEntries conflicts
 27. [ ] [Raft] Propose SQL writes through Raft when clustered
-28. [ ] [Raft] Raft peers list in shardforge.toml
+28. [ ] [Raft] Raft peers list in rengo.toml
 29. [ ] [Raft] Expose Raft role in CLI status
 30. [ ] [Raft] Randomized election timeout jitter
 31. [ ] [Raft] Cancel election timer on valid heartbeat
@@ -277,10 +277,10 @@ These were delivered in the single-node wiring pass; kept here for traceability.
 236. [ ] [Enterprise] Stream processing hooks
 237. [ ] [Enterprise] ML-assisted optimizer hooks
 238. [ ] [CLI-API] Interactive SQL REPL default for sql without query
-239. [ ] [CLI-API] Implement shardforge-cli init for real
-240. [ ] [CLI-API] Implement shardforge-cli start for real
-241. [ ] [CLI-API] Implement shardforge-cli stop with PID file
-242. [ ] [CLI-API] Implement shardforge-cli status against live node
+239. [ ] [CLI-API] Implement rengo-cli init for real
+240. [ ] [CLI-API] Implement rengo-cli start for real
+241. [ ] [CLI-API] Implement rengo-cli stop with PID file
+242. [ ] [CLI-API] Implement rengo-cli status against live node
 243. [ ] [CLI-API] cluster init/bootstrap command
 244. [ ] [CLI-API] cluster join command
 245. [ ] [CLI-API] cluster status command
@@ -306,8 +306,8 @@ These were delivered in the single-node wiring pass; kept here for traceability.
 265. [ ] [CLI-API] Secure REPL history
 266. [ ] [CLI-API] Multi-statement script from file
 267. [ ] [CLI-API] start --wait-ready
-268. [ ] [CLI-API] Put shardforge-cli in workspace members
-269. [ ] [CLI-API] Single authoritative shardforge binary
+268. [ ] [CLI-API] Put rengo-cli in workspace members
+269. [ ] [CLI-API] Single authoritative rengo binary
 270. [ ] [CLI-API] JSON status output
 271. [ ] [CLI-API] Quiet/verbose global flags
 272. [ ] [SQL-Parser] Parse UNIQUE column attribute

@@ -6,9 +6,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
-use shardforge_config::{ShardForgeConfig, StorageEngineType};
-use shardforge_core::{Result, ShardForgeError, TransactionId};
-use shardforge_storage::{MVCCStorage, StorageConfig, StorageEngine, StorageEngineFactory};
+use rengo_config::{RengoConfig, StorageEngineType};
+use rengo_core::{Result, RengoError, TransactionId};
+use rengo_storage::{MVCCStorage, StorageConfig, StorageEngine, StorageEngineFactory};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{Mutex, RwLock};
@@ -40,7 +40,7 @@ pub struct NodeStatus {
 
 /// Composition root: storage + SQL + transactions + TCP SQL server
 pub struct DatabaseNode {
-    config: ShardForgeConfig,
+    config: RengoConfig,
     executor: Arc<Mutex<QueryExecutor>>,
     tx_manager: Arc<TransactionManager>,
     /// Explicit session transaction started by BEGIN (shared with connection handle)
@@ -68,9 +68,9 @@ struct SqlResponse {
 
 impl DatabaseNode {
     /// Open storage and build a node from configuration
-    pub async fn from_config(config: ShardForgeConfig) -> Result<Self> {
+    pub async fn from_config(config: RengoConfig) -> Result<Self> {
         let data_dir = config.cluster.data_directory.clone();
-        std::fs::create_dir_all(&data_dir).map_err(|e| ShardForgeError::internal(format!(
+        std::fs::create_dir_all(&data_dir).map_err(|e| RengoError::internal(format!(
             "Failed to create data directory {}: {}",
             data_dir.display(),
             e
@@ -126,7 +126,7 @@ impl DatabaseNode {
 
     /// Load configuration from a TOML file and open the node
     pub async fn from_config_file(path: impl AsRef<Path>) -> Result<Self> {
-        let loader = shardforge_config::ConfigLoader::new();
+        let loader = rengo_config::ConfigLoader::new();
         let config = loader.load_from_file(path).await?;
         Self::from_config(config).await
     }
@@ -158,20 +158,20 @@ impl DatabaseNode {
     /// Bind TCP listener and serve newline-delimited JSON SQL requests until shutdown
     pub async fn start(&self) -> Result<()> {
         let addr: SocketAddr =
-            self.bind_address.parse().map_err(|e| ShardForgeError::Config {
+            self.bind_address.parse().map_err(|e| RengoError::Config {
                 message: format!("Invalid bind address '{}': {}", self.bind_address, e),
             })?;
 
         let listener = TcpListener::bind(addr).await.map_err(|e| {
-            ShardForgeError::internal(format!("Failed to bind {}: {}", addr, e))
+            RengoError::internal(format!("Failed to bind {}: {}", addr, e))
         })?;
 
         let local = listener.local_addr().map_err(|e| {
-            ShardForgeError::internal(format!("Failed to read local address: {}", e))
+            RengoError::internal(format!("Failed to read local address: {}", e))
         })?;
 
         self.running.store(true, Ordering::SeqCst);
-        println!("ShardForge node listening on {}", local);
+        println!("Rengo node listening on {}", local);
         println!("Storage engine: {}", self.storage_engine_name);
         println!("Cluster: {}", self.config.cluster.name);
         println!("Send newline-delimited JSON: {{\"sql\":\"SELECT 1\"}}");
@@ -211,7 +211,7 @@ impl DatabaseNode {
         }
 
         self.running.store(false, Ordering::SeqCst);
-        println!("ShardForge node stopped");
+        println!("Rengo node stopped");
         Ok(())
     }
 
@@ -230,21 +230,21 @@ impl DatabaseNode {
     }
 
     async fn load_catalog(storage: &dyn StorageEngine, catalog: &mut SchemaCatalog) -> Result<()> {
-        let list_key = shardforge_core::Key::from_string(CATALOG_LIST_KEY);
+        let list_key = rengo_core::Key::from_string(CATALOG_LIST_KEY);
         let Some(list_value) = storage.get(&list_key).await? else {
             return Ok(());
         };
 
         let names: Vec<String> = serde_json::from_slice(list_value.as_slice()).map_err(|e| {
-            ShardForgeError::internal(format!("Corrupt catalog list: {}", e))
+            RengoError::internal(format!("Corrupt catalog list: {}", e))
         })?;
 
         for name in names {
-            let key = shardforge_core::Key::from_string(&format!("{}{}", CATALOG_TABLE_PREFIX, name));
+            let key = rengo_core::Key::from_string(&format!("{}{}", CATALOG_TABLE_PREFIX, name));
             if let Some(raw) = storage.get(&key).await? {
                 let schema: crate::sql::TableSchema = serde_json::from_slice(raw.as_slice())
                     .map_err(|e| {
-                        ShardForgeError::internal(format!(
+                        RengoError::internal(format!(
                             "Corrupt catalog entry for '{}': {}",
                             name, e
                         ))
@@ -292,7 +292,7 @@ async fn execute_sql_inner(
         Statement::Begin(_) => {
             let mut guard = active_tx.lock().await;
             if guard.is_some() {
-                return Err(ShardForgeError::Transaction {
+                return Err(RengoError::Transaction {
                     message: "Transaction already in progress".to_string(),
                 });
             }
@@ -309,7 +309,7 @@ async fn execute_sql_inner(
         Statement::Commit(_) => {
             let mut guard = active_tx.lock().await;
             let Some(tx_id) = guard.take() else {
-                return Err(ShardForgeError::Transaction {
+                return Err(RengoError::Transaction {
                     message: "No active transaction to COMMIT".to_string(),
                 });
             };
@@ -323,7 +323,7 @@ async fn execute_sql_inner(
         Statement::Rollback(_) => {
             let mut guard = active_tx.lock().await;
             let Some(tx_id) = guard.take() else {
-                return Err(ShardForgeError::Transaction {
+                return Err(RengoError::Transaction {
                     message: "No active transaction to ROLLBACK".to_string(),
                 });
             };
@@ -382,7 +382,7 @@ async fn handle_client(stream: TcpStream, node: Arc<DatabaseNodeHandle>) -> Resu
     let mut lines = BufReader::new(reader).lines();
 
     while let Some(line) = lines.next_line().await.map_err(|e| {
-        ShardForgeError::internal(format!("Read error: {}", e))
+        RengoError::internal(format!("Read error: {}", e))
     })? {
         let line = line.trim().to_string();
         if line.is_empty() {
@@ -424,11 +424,11 @@ async fn handle_client(stream: TcpStream, node: Arc<DatabaseNodeHandle>) -> Resu
         };
 
         let mut out = serde_json::to_string(&response).map_err(|e| {
-            ShardForgeError::internal(format!("Serialize response: {}", e))
+            RengoError::internal(format!("Serialize response: {}", e))
         })?;
         out.push('\n');
         writer.write_all(out.as_bytes()).await.map_err(|e| {
-            ShardForgeError::internal(format!("Write error: {}", e))
+            RengoError::internal(format!("Write error: {}", e))
         })?;
     }
 
@@ -443,7 +443,7 @@ mod tests {
     #[tokio::test]
     async fn test_node_execute_sql_roundtrip() {
         let temp = TempDir::new().unwrap();
-        let mut config = ShardForgeConfig::default();
+        let mut config = RengoConfig::default();
         config.cluster.data_directory = temp.path().to_path_buf();
         config.storage.engine = StorageEngineType::Memory;
         config.node.bind_address = "127.0.0.1:0".to_string();
@@ -474,7 +474,7 @@ mod tests {
     #[tokio::test]
     async fn test_session_transaction_begin_commit() {
         let temp = TempDir::new().unwrap();
-        let mut config = ShardForgeConfig::default();
+        let mut config = RengoConfig::default();
         config.cluster.data_directory = temp.path().to_path_buf();
         config.storage.engine = StorageEngineType::Memory;
 
@@ -500,7 +500,7 @@ mod tests {
     #[tokio::test]
     async fn test_session_transaction_rollback_clears_flag() {
         let temp = TempDir::new().unwrap();
-        let mut config = ShardForgeConfig::default();
+        let mut config = RengoConfig::default();
         config.cluster.data_directory = temp.path().to_path_buf();
         config.storage.engine = StorageEngineType::Memory;
 

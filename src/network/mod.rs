@@ -1,4 +1,4 @@
-//! Network communication layer for ShardForge
+//! Network communication layer for Rengo
 //!
 //! This module provides the gRPC server implementation and client connectivity
 //! for distributed database operations.

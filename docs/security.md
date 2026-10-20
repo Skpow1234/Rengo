@@ -297,4 +297,4 @@ impl SecurityMonitor {
 - **Configuration Management**: Infrastructure as code
 - **Container Security**: Image scanning and runtime protection
 
-This security architecture ensures ShardForge meets enterprise-grade requirements for data protection, compliance, and threat mitigation.
+This security architecture ensures Rengo meets enterprise-grade requirements for data protection, compliance, and threat mitigation.

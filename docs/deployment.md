@@ -8,13 +8,13 @@
 
 ```bash
 # Initialize single-node cluster
-shardforge init --single-node --data-dir ./data --config shardforge.toml
+rengo init --single-node --data-dir ./data --config rengo.toml
 
 # Start the database
-shardforge start --config shardforge.toml
+rengo start --config rengo.toml
 
 # Connect via CLI
-shardforge sql --database default
+rengo sql --database default
 ```
 
 **Development Configuration**:
@@ -40,27 +40,27 @@ level = "debug"
 
 ```bash
 # Initialize seed node
-shardforge cluster bootstrap \
+rengo cluster bootstrap \
   --node-id node-001 \
   --bind 10.0.1.10:5432 \
   --advertise 10.0.1.10:5432 \
   --cluster-members "10.0.1.10:5432,10.0.1.11:5432,10.0.1.12:5432" \
-  --data-dir /data/shardforge
+  --data-dir /data/rengo
 
 # Join additional nodes
-shardforge cluster join \
+rengo cluster join \
   --node-id node-002 \
   --bind 10.0.1.11:5432 \
   --advertise 10.0.1.11:5432 \
   --seed-nodes "10.0.1.10:5432" \
-  --data-dir /data/shardforge
+  --data-dir /data/rengo
 
-shardforge cluster join \
+rengo cluster join \
   --node-id node-003 \
   --bind 10.0.1.12:5432 \
   --advertise 10.0.1.12:5432 \
   --seed-nodes "10.0.1.10:5432" \
-  --data-dir /data/shardforge
+  --data-dir /data/rengo
 ```
 
 #### Automated Cluster Deployment
@@ -90,8 +90,8 @@ terraform {
   }
 }
 
-module "shardforge_cluster" {
-  source = "./modules/shardforge-cluster"
+module "rengo_cluster" {
+  source = "./modules/rengo-cluster"
 
   cluster_name    = "production"
   node_count      = 5
@@ -100,11 +100,11 @@ module "shardforge_cluster" {
 
   vpc_id          = aws_vpc.main.id
   subnet_ids      = aws_subnet.private[*].id
-  security_groups = [aws_security_group.shardforge.id]
+  security_groups = [aws_security_group.rengo.id]
 
   tags = {
     Environment = "production"
-    Project     = "shardforge"
+    Project     = "rengo"
   }
 }
 ```
@@ -115,22 +115,22 @@ module "shardforge_cluster" {
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: shardforge-cluster
+  name: rengo-cluster
   namespace: database
 spec:
-  serviceName: shardforge
+  serviceName: rengo
   replicas: 5
   selector:
     matchLabels:
-      app: shardforge
+      app: rengo
   template:
     metadata:
       labels:
-        app: shardforge
+        app: rengo
     spec:
       containers:
-      - name: shardforge
-        image: shardforge/shardforge:latest
+      - name: rengo
+        image: rengo/rengo:latest
         ports:
         - containerPort: 5432
           name: sql
@@ -142,12 +142,12 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: CLUSTER_MEMBERS
-          value: "shardforge-0.shardforge.database.svc.cluster.local:5432,shardforge-1.shardforge.database.svc.cluster.local:5432,shardforge-2.shardforge.database.svc.cluster.local:5432,shardforge-3.shardforge.database.svc.cluster.local:5432,shardforge-4.shardforge.database.svc.cluster.local:5432"
+          value: "rengo-0.rengo.database.svc.cluster.local:5432,rengo-1.rengo.database.svc.cluster.local:5432,rengo-2.rengo.database.svc.cluster.local:5432,rengo-3.rengo.database.svc.cluster.local:5432,rengo-4.rengo.database.svc.cluster.local:5432"
         volumeMounts:
         - name: data
           mountPath: /data
         - name: config
-          mountPath: /etc/shardforge
+          mountPath: /etc/rengo
           readOnly: true
         livenessProbe:
           httpGet:
@@ -171,7 +171,7 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: shardforge-config
+          name: rengo-config
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -185,7 +185,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: shardforge-cluster
+  name: rengo-cluster
   namespace: database
 spec:
   type: ClusterIP
@@ -197,7 +197,7 @@ spec:
     targetPort: 9090
     name: metrics
   selector:
-    app: shardforge
+    app: rengo
 ```
 
 ### Helm Chart
@@ -209,7 +209,7 @@ cluster:
   replicas: 5
 
 image:
-  repository: shardforge/shardforge
+  repository: rengo/rengo
   tag: "latest"
   pullPolicy: IfNotPresent
 
@@ -239,10 +239,10 @@ service:
 ### Hierarchical Configuration System
 
 ```toml
-# /etc/shardforge/cluster.toml - System-wide defaults
+# /etc/rengo/cluster.toml - System-wide defaults
 [cluster]
 name = "production-cluster"
-data_directory = "/data/shardforge"
+data_directory = "/data/rengo"
 
 [storage]
 engine = "rocksdb"
@@ -250,14 +250,14 @@ compression = "lz4"
 
 [security]
 tls_enabled = true
-certificate_path = "/etc/ssl/certs/shardforge.crt"
-private_key_path = "/etc/ssl/private/shardforge.key"
+certificate_path = "/etc/ssl/certs/rengo.crt"
+private_key_path = "/etc/ssl/private/rengo.key"
 
-# ~/.shardforge/user.toml - User overrides
+# ~/.rengo/user.toml - User overrides
 [logging]
 level = "debug"
 
-# shardforge.toml - Environment-specific config
+# rengo.toml - Environment-specific config
 [cluster]
 node_id = "node-001"
 bind_address = "10.0.1.10:5432"
@@ -348,8 +348,8 @@ pub struct MetricsRegistry {
 impl MetricsRegistry {
     pub fn new() -> Self {
         Self {
-            cpu_usage: register_gauge!("shardforge_cpu_usage_percent"),
-            memory_usage: register_gauge!("shardforge_memory_usage_bytes"),
+            cpu_usage: register_gauge!("rengo_cpu_usage_percent"),
+            memory_usage: register_gauge!("rengo_memory_usage_bytes"),
             // ... initialize other metrics
         }
     }
@@ -406,19 +406,19 @@ pub async fn execute_query(&self, query: Query) -> Result<QueryResult, Error> {
 ```yaml
 # Prometheus alerting rules
 groups:
-- name: shardforge
+- name: rengo
   rules:
-  - alert: ShardForgeNodeDown
-    expr: up{job="shardforge"} == 0
+  - alert: RengoNodeDown
+    expr: up{job="rengo"} == 0
     for: 5m
     labels:
       severity: critical
     annotations:
-      summary: "ShardForge node {{ $labels.instance }} is down"
-      description: "ShardForge node has been down for more than 5 minutes."
+      summary: "Rengo node {{ $labels.instance }} is down"
+      description: "Rengo node has been down for more than 5 minutes."
 
-  - alert: ShardForgeHighLatency
-    expr: histogram_quantile(0.99, rate(shardforge_query_latency_bucket[5m])) > 1
+  - alert: RengoHighLatency
+    expr: histogram_quantile(0.99, rate(rengo_query_latency_bucket[5m])) > 1
     for: 5m
     labels:
       severity: warning
@@ -426,8 +426,8 @@ groups:
       summary: "High query latency on {{ $labels.instance }}"
       description: "99th percentile query latency is {{ $value }}s"
 
-  - alert: ShardForgeReplicationLag
-    expr: shardforge_replication_lag_seconds > 30
+  - alert: RengoReplicationLag
+    expr: rengo_replication_lag_seconds > 30
     for: 2m
     labels:
       severity: warning
@@ -441,27 +441,27 @@ groups:
 
 ```bash
 # Full backup
-shardforge backup create \
+rengo backup create \
   --type full \
   --database production \
-  --destination s3://backups/shardforge/production \
+  --destination s3://backups/rengo/production \
   --compression zstd \
   --encryption aes256 \
   --retention 30d
 
 # Incremental backup
-shardforge backup create \
+rengo backup create \
   --type incremental \
   --database production \
   --parent-backup backup-2024-01-01-full \
-  --destination s3://backups/shardforge/production
+  --destination s3://backups/rengo/production
 
 # Point-in-time recovery
-shardforge backup restore \
+rengo backup restore \
   --backup-id backup-2024-01-01-full \
   --point-in-time "2024-01-01 14:30:00" \
   --target-database production_restored \
-  --destination /data/shardforge/restored
+  --destination /data/rengo/restored
 ```
 
 ### Automated Backup Scheduling
@@ -471,7 +471,7 @@ shardforge backup restore \
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: shardforge-backup
+  name: rengo-backup
 spec:
   schedule: "0 2 * * *"  # Daily at 2 AM
   jobTemplate:
@@ -480,9 +480,9 @@ spec:
         spec:
           containers:
           - name: backup
-            image: shardforge/shardforge:latest
+            image: rengo/rengo:latest
             command:
-            - shardforge
+            - rengo
             - backup
             - create
             - --type
@@ -490,7 +490,7 @@ spec:
             - --database
             - production
             - --destination
-            - s3://backups/shardforge/production
+            - s3://backups/rengo/production
             env:
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
@@ -514,7 +514,7 @@ echo "Starting disaster recovery test..."
 
 # 1. Create backup
 echo "Creating backup..."
-shardforge backup create --type full --database test --destination /tmp/backup
+rengo backup create --type full --database test --destination /tmp/backup
 
 # 2. Simulate disaster (kill all nodes)
 echo "Simulating disaster..."
@@ -522,11 +522,11 @@ docker-compose down
 
 # 3. Restore from backup
 echo "Restoring from backup..."
-shardforge backup restore --backup-path /tmp/backup --target-database recovered
+rengo backup restore --backup-path /tmp/backup --target-database recovered
 
 # 4. Validate recovery
 echo "Validating recovery..."
-shardforge sql --database recovered --command "SELECT COUNT(*) FROM users;"
+rengo sql --database recovered --command "SELECT COUNT(*) FROM users;"
 
 echo "Disaster recovery test completed."
 ```
@@ -544,29 +544,29 @@ for node in "${NODES[@]}"; do
     echo "Upgrading $node..."
 
     # Drain connections from node
-    shardforge node drain --node-id $node --timeout 300s
+    rengo node drain --node-id $node --timeout 300s
 
     # Wait for drain to complete
-    while ! shardforge node is-drained --node-id $node; do
+    while ! rengo node is-drained --node-id $node; do
         sleep 10
     done
 
     # Stop node
-    shardforge node stop --node-id $node --graceful
+    rengo node stop --node-id $node --graceful
 
     # Upgrade binary
-    scp new-shardforge-binary $node:/usr/local/bin/shardforge
+    scp new-rengo-binary $node:/usr/local/bin/rengo
 
     # Start node
-    ssh $node "shardforge start --config /etc/shardforge/config.toml"
+    ssh $node "rengo start --config /etc/rengo/config.toml"
 
     # Wait for node to be healthy
-    while ! shardforge node health --node-id $node; do
+    while ! rengo node health --node-id $node; do
         sleep 10
     done
 
     # Allow connections back
-    shardforge node undrain --node-id $node
+    rengo node undrain --node-id $node
 
     echo "$node upgrade completed."
 done
@@ -650,42 +650,42 @@ telnet <seed-node> 5432
 sudo iptables -L | grep 5432
 
 # Check node logs
-shardforge logs --node-id <node-id> --since 1h
+rengo logs --node-id <node-id> --since 1h
 
 # Verify cluster configuration
-shardforge cluster status --detailed
+rengo cluster status --detailed
 ```
 
 ##### Issue: High query latency
 
 ```bash
 # Check system resources
-shardforge metrics --format table | grep -E "(cpu|memory|disk)"
+rengo metrics --format table | grep -E "(cpu|memory|disk)"
 
 # Analyze slow queries
-shardforge query profile --slow-threshold 1s --last 1h
+rengo query profile --slow-threshold 1s --last 1h
 
 # Check query plan
-shardforge query explain "SELECT * FROM large_table WHERE condition"
+rengo query explain "SELECT * FROM large_table WHERE condition"
 
 # Monitor cache hit rates
-shardforge metrics | grep cache_hit_rate
+rengo metrics | grep cache_hit_rate
 ```
 
 ##### Issue: Replication lag
 
 ```bash
 # Check replication status
-shardforge replication status --detailed
+rengo replication status --detailed
 
 # Monitor network latency
-shardforge debug network-latency --all-nodes
+rengo debug network-latency --all-nodes
 
 # Check leader health
-shardforge cluster status | grep leader
+rengo cluster status | grep leader
 
 # Validate data consistency
-shardforge debug consistency-check --table important_table
+rengo debug consistency-check --table important_table
 ```
 
-This comprehensive deployment guide ensures reliable, scalable, and maintainable ShardForge deployments across various infrastructure platforms.
+This comprehensive deployment guide ensures reliable, scalable, and maintainable Rengo deployments across various infrastructure platforms.

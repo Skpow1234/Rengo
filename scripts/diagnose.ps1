@@ -1,7 +1,7 @@
-# ShardForge Diagnostic Script
+# Rengo Diagnostic Script
 # Helps identify common issues
 
-Write-Host "🔍 ShardForge Diagnostics" -ForegroundColor Cyan
+Write-Host "🔍 Rengo Diagnostics" -ForegroundColor Cyan
 Write-Host "=========================" -ForegroundColor Cyan
 
 # Check Rust installation
@@ -59,7 +59,7 @@ if (Test-Path "Cargo.lock") {
 
 # Check workspace members
 Write-Host "`n🔗 Checking workspace members..." -ForegroundColor Yellow
-$workspaceMembers = @("shardforge-core", "shardforge-config", "shardforge-storage")
+$workspaceMembers = @("rengo-core", "rengo-config", "rengo-storage")
 foreach ($member in $workspaceMembers) {
     if (Test-Path "$member/Cargo.toml") {
         Write-Host "✅ $member/Cargo.toml found" -ForegroundColor Green

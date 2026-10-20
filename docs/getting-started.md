@@ -1,8 +1,8 @@
 # Getting Started
 
-Quick ways to build and run ShardForge locally. For production layouts, see [deployment](deployment.md) and [Docker](DOCKER.md).
+Quick ways to build and run Rengo locally. For production layouts, see [deployment](deployment.md) and [Docker](DOCKER.md).
 
-> **Note:** Single-node `DatabaseNode` can open storage, run SQL, and listen for TCP JSON SQL via `shardforge start`. Full gRPC tonic serve, Raft clustering, and durable MVCC are still in progress. See [milestones](milestones.md).
+> **Note:** Single-node `DatabaseNode` can open storage, run SQL, and listen for TCP JSON SQL via `rengo start`. Full gRPC tonic serve, Raft clustering, and durable MVCC are still in progress. See [milestones](milestones.md).
 
 ## Prerequisites
 
@@ -23,25 +23,25 @@ More build detail: [build.md](build.md).
 ## Build from source
 
 ```bash
-git clone https://github.com/Skpow1234/ShardForge.git
-cd ShardForge
+git clone https://github.com/Skpow1234/Rengo.git
+cd Rengo
 
 # Linux system deps (example)
 sudo apt-get install -y build-essential pkg-config libssl-dev clang
 
 cargo build --release
 
-./target/release/shardforge init --single-node --data-dir ./data
-./target/release/shardforge start --config shardforge.toml
-./target/release/shardforge status --detailed
-./target/release/shardforge sql "SELECT 1 as welcome"
+./target/release/rengo init --single-node --data-dir ./data
+./target/release/rengo start --config rengo.toml
+./target/release/rengo status --detailed
+./target/release/rengo sql "SELECT 1 as welcome"
 ```
 
 Windows (PowerShell, sled recommended):
 
 ```powershell
 .\scripts\build.ps1 -Test
-.\target\release\shardforge.exe init --single-node --data-dir .\data
+.\target\release\rengo.exe init --single-node --data-dir .\data
 ```
 
 ## Docker (image run)
@@ -49,21 +49,21 @@ Windows (PowerShell, sled recommended):
 ```bash
 mkdir -p data
 
-docker pull shardforge/shardforge:latest   # when published
+docker pull rengo/rengo:latest   # when published
 
-docker run --rm -v $(pwd)/data:/data shardforge/shardforge:latest \
+docker run --rm -v $(pwd)/data:/data rengo/rengo:latest \
   init --single-node --data-dir /data
 
-docker run -d --name shardforge-db \
+docker run -d --name rengo-db \
   -v $(pwd)/data:/data \
   -p 5432:5432 \
-  shardforge/shardforge:latest \
-  start --config /data/shardforge.toml
+  rengo/rengo:latest \
+  start --config /data/rengo.toml
 
-docker run --rm --network container:shardforge-db \
-  shardforge/shardforge:latest status
+docker run --rm --network container:rengo-db \
+  rengo/rengo:latest status
 
-docker stop shardforge-db && docker rm shardforge-db
+docker stop rengo-db && docker rm rengo-db
 ```
 
 ## Docker Compose (local)
@@ -72,9 +72,9 @@ docker stop shardforge-db && docker rm shardforge-db
 # Default / production profile
 docker-compose up -d
 
-docker-compose exec shardforge init --single-node --data-dir /data/shardforge
-docker-compose exec shardforge status --detailed
-docker-compose logs -f shardforge
+docker-compose exec rengo init --single-node --data-dir /data/rengo
+docker-compose exec rengo status --detailed
+docker-compose logs -f rengo
 docker-compose down
 ```
 
@@ -82,7 +82,7 @@ Other profiles (`dev`, `perf`, `cluster`, `monitoring`): [DOCKER.md](DOCKER.md).
 
 ## Configuration
 
-Default config: [`shardforge.toml`](../shardforge.toml)
+Default config: [`rengo.toml`](../rengo.toml)
 
 Key settings:
 

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines the comprehensive risk assessment for ShardForge, a distributed database system built in Rust. Risks are categorized by type and assessed by likelihood and impact.
+This document outlines the comprehensive risk assessment for Rengo, a distributed database system built in Rust. Risks are categorized by type and assessed by likelihood and impact.
 
 ### Risk Assessment Methodology
 

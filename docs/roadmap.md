@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-ShardForge development follows a phased approach over 36 months, focusing on incremental delivery of production-ready features while maintaining code quality and operational excellence. Each phase builds upon the previous one, with regular releases and extensive testing.
+Rengo development follows a phased approach over 36 months, focusing on incremental delivery of production-ready features while maintaining code quality and operational excellence. Each phase builds upon the previous one, with regular releases and extensive testing.
 
 ## Phase 1: Foundation (Months 1-8) - Single-Node Database
 

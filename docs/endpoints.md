@@ -1,11 +1,11 @@
 # Endpoints & Network APIs
 
-ShardForge exposes:
+Rengo exposes:
 
-1. A **TCP JSON SQL** listener on `[node].bind_address` (live via `DatabaseNode::start` / `shardforge start`)
+1. A **TCP JSON SQL** listener on `[node].bind_address` (live via `DatabaseNode::start` / `rengo start`)
 2. A **gRPC** service defined in [`proto/database.proto`](../proto/database.proto) (stubs until `grpc-enabled` + protoc)
 
-Default bind addresses come from [`shardforge.toml`](../shardforge.toml). See [milestones](milestones.md).
+Default bind addresses come from [`rengo.toml`](../rengo.toml). See [milestones](milestones.md).
 
 ## Default ports
 
@@ -30,7 +30,7 @@ Newline-delimited JSON over TCP.
 {"ok":true,"columns":[],"rows":[],"affected_rows":1,"error":null}
 ```
 
-Example with `nc` / PowerShell after `shardforge start`:
+Example with `nc` / PowerShell after `rengo start`:
 
 ```bash
 echo '{"sql":"SELECT id, name FROM t"}' | nc 127.0.0.1 5432
@@ -39,7 +39,7 @@ echo '{"sql":"SELECT id, name FROM t"}' | nc 127.0.0.1 5432
 CLI without a long-running server (in-process node):
 
 ```bash
-shardforge sql "SELECT 1" --config shardforge.toml
+rengo sql "SELECT 1" --config rengo.toml
 ```
 
 
@@ -55,7 +55,7 @@ Docker Compose maps the same ports (and variants for multi-profile setups):
 
 Full Docker port tables: [DOCKER.md](DOCKER.md).
 
-## gRPC service: `shardforge.rpc.DatabaseService`
+## gRPC service: `rengo.rpc.DatabaseService`
 
 ### Cluster management
 
@@ -101,13 +101,13 @@ Full Docker port tables: [DOCKER.md](DOCKER.md).
 
 ## CLI surface (local)
 
-Until the server fully listens, most workflows go through the `shardforge` CLI:
+Until the server fully listens, most workflows go through the `rengo` CLI:
 
 ```bash
-shardforge init --single-node --data-dir ./data
-shardforge start --config shardforge.toml
-shardforge status --detailed
-shardforge sql --query "SELECT 1"
+rengo init --single-node --data-dir ./data
+rengo start --config rengo.toml
+rengo status --detailed
+rengo sql --query "SELECT 1"
 ```
 
 Cluster-oriented commands (bootstrap / join / status) are sketched in the CLI crate; see [deployment](deployment.md) and [CLI summary](cli-implementation-summary.md).

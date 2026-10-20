@@ -1,7 +1,7 @@
 //! Integration tests for storage engines
 
-use shardforge_core::{Key, Value};
-use shardforge_storage::{StorageEngine, StorageEngineFactory, StorageConfig, WriteOperation};
+use rengo_core::{Key, Value};
+use rengo_storage::{StorageEngine, StorageEngineFactory, StorageConfig, WriteOperation};
 use tempfile::TempDir;
 
 #[tokio::test]
@@ -10,7 +10,7 @@ async fn test_memory_engine_integration() {
     let temp_dir = TempDir::new().unwrap();
 
     let mut engine = StorageEngineFactory::create(
-        shardforge_config::StorageEngineType::Memory,
+        rengo_config::StorageEngineType::Memory,
         &config,
         temp_dir.path()
     ).await.unwrap();
@@ -58,7 +58,7 @@ async fn test_storage_engine_concurrency() {
     let temp_dir = TempDir::new().unwrap();
 
     let engine = StorageEngineFactory::create(
-        shardforge_config::StorageEngineType::Memory,
+        rengo_config::StorageEngineType::Memory,
         &config,
         temp_dir.path()
     ).await.unwrap();
@@ -99,7 +99,7 @@ async fn test_storage_engine_error_handling() {
     let temp_dir = TempDir::new().unwrap();
 
     let mut engine = StorageEngineFactory::create(
-        shardforge_config::StorageEngineType::Memory,
+        rengo_config::StorageEngineType::Memory,
         &config,
         temp_dir.path()
     ).await.unwrap();
@@ -124,7 +124,7 @@ async fn test_storage_engine_large_data() {
     let temp_dir = TempDir::new().unwrap();
 
     let mut engine = StorageEngineFactory::create(
-        shardforge_config::StorageEngineType::Memory,
+        rengo_config::StorageEngineType::Memory,
         &config,
         temp_dir.path()
     ).await.unwrap();
@@ -164,7 +164,7 @@ async fn test_storage_engine_flush_and_compact() {
     let temp_dir = TempDir::new().unwrap();
 
     let mut engine = StorageEngineFactory::create(
-        shardforge_config::StorageEngineType::Memory,
+        rengo_config::StorageEngineType::Memory,
         &config,
         temp_dir.path()
     ).await.unwrap();

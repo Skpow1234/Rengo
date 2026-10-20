@@ -1,4 +1,4 @@
-# Prometheus configuration for ShardForge monitoring
+# Prometheus configuration for Rengo monitoring
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -8,20 +8,20 @@ rule_files:
   # - "second_rules.yml"
 
 scrape_configs:
-  # ShardForge metrics
-  - job_name: 'shardforge'
+  # Rengo metrics
+  - job_name: 'rengo'
     static_configs:
-      - targets: ['shardforge:9090']
+      - targets: ['rengo:9090']
     scrape_interval: 5s
     metrics_path: '/metrics'
 
-  # ShardForge cluster nodes
-  - job_name: 'shardforge-cluster'
+  # Rengo cluster nodes
+  - job_name: 'rengo-cluster'
     static_configs:
       - targets: 
-        - 'shardforge:9090'
-        - 'shardforge-node2:9090'
-        - 'shardforge-node3:9090'
+        - 'rengo:9090'
+        - 'rengo-node2:9090'
+        - 'rengo-node3:9090'
     scrape_interval: 10s
     metrics_path: '/metrics'
 

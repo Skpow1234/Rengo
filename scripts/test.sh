@@ -1,9 +1,9 @@
 #!/bin/bash
-# ShardForge Test Runner Script
+# Rengo Test Runner Script
 
 set -e
 
-echo "🧪 Running ShardForge Test Suite"
+echo "🧪 Running Rengo Test Suite"
 echo "================================="
 
 # Colors for output

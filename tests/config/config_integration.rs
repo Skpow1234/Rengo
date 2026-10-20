@@ -1,6 +1,6 @@
 //! Integration tests for configuration system
 
-use shardforge_config::*;
+use rengo_config::*;
 use std::env;
 use tempfile::TempDir;
 use tokio::fs;
@@ -69,9 +69,9 @@ async fn test_config_loader_hierarchical_loading() {
 #[tokio::test]
 async fn test_config_loader_environment_variables() {
     // Set environment variables
-    env::set_var("SHARDFORGE_CLUSTER__NAME", "env-cluster");
-    env::set_var("SHARDFORGE_NODE__BIND_ADDRESS", "0.0.0.0:9999");
-    env::set_var("SHARDFORGE_STORAGE__BLOCK_CACHE_SIZE_MB", "512");
+    env::set_var("RENGO_CLUSTER__NAME", "env-cluster");
+    env::set_var("RENGO_NODE__BIND_ADDRESS", "0.0.0.0:9999");
+    env::set_var("RENGO_STORAGE__BLOCK_CACHE_SIZE_MB", "512");
 
     let loader = ConfigLoader::new();
     let config = loader.load().await.unwrap();
@@ -81,9 +81,9 @@ async fn test_config_loader_environment_variables() {
     assert_eq!(config.storage.block_cache_size_mb, 512);
 
     // Clean up
-    env::remove_var("SHARDFORGE_CLUSTER__NAME");
-    env::remove_var("SHARDFORGE_NODE__BIND_ADDRESS");
-    env::remove_var("SHARDFORGE_STORAGE__BLOCK_CACHE_SIZE_MB");
+    env::remove_var("RENGO_CLUSTER__NAME");
+    env::remove_var("RENGO_NODE__BIND_ADDRESS");
+    env::remove_var("RENGO_STORAGE__BLOCK_CACHE_SIZE_MB");
 }
 
 #[tokio::test]
@@ -98,7 +98,7 @@ async fn test_config_loader_tilde_expansion() {
             ca_certificate_path = "~/certs/ca.pem"
 
             [logging]
-            file_path = "~/logs/shardforge.log"
+            file_path = "~/logs/rengo.log"
         "#);
 
         let temp_dir = TempDir::new().unwrap();
@@ -112,7 +112,7 @@ async fn test_config_loader_tilde_expansion() {
         let expected_cert_path = format!("{}/certs/cert.pem", home_str);
         let expected_key_path = format!("{}/certs/key.pem", home_str);
         let expected_ca_path = format!("{}/certs/ca.pem", home_str);
-        let expected_log_path = format!("{}/logs/shardforge.log", home_str);
+        let expected_log_path = format!("{}/logs/rengo.log", home_str);
 
         assert_eq!(config.network.certificate_path.unwrap().to_str().unwrap(), expected_cert_path);
         assert_eq!(config.network.private_key_path.unwrap().to_str().unwrap(), expected_key_path);
@@ -138,7 +138,7 @@ async fn test_config_validation_comprehensive() {
     fs::write(&key_path, "dummy key").await.unwrap();
     fs::write(&ca_path, "dummy ca").await.unwrap();
 
-    let mut config = ShardForgeConfig::default();
+    let mut config = RengoConfig::default();
 
     // Configure TLS
     config.network.tls_enabled = true;
@@ -149,7 +149,7 @@ async fn test_config_validation_comprehensive() {
     // Configure logging
     let log_dir = temp_dir.path().join("logs");
     fs::create_dir(&log_dir).await.unwrap();
-    config.logging.file_path = Some(log_dir.join("shardforge.log"));
+    config.logging.file_path = Some(log_dir.join("rengo.log"));
 
     // Configure data directory
     let data_dir = temp_dir.path().join("data");
@@ -185,7 +185,7 @@ async fn test_config_validation_comprehensive() {
 
 #[tokio::test]
 async fn test_config_round_trip() {
-    let mut original_config = ShardForgeConfig::default();
+    let mut original_config = RengoConfig::default();
     original_config.cluster.name = "round-trip-test".to_string();
     original_config.node.bind_address = "127.0.0.1:9999".to_string();
 
@@ -213,7 +213,7 @@ async fn test_config_loader_nonexistent_files() {
 #[tokio::test]
 async fn test_config_validation_edge_cases() {
     // Test minimum valid configuration
-    let mut config = ShardForgeConfig::default();
+    let mut config = RengoConfig::default();
     config.storage.block_cache_size_mb = 1;
     config.storage.write_buffer_size_mb = 1;
     config.storage.max_write_buffer_number = 1;

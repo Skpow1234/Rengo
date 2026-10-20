@@ -8,7 +8,7 @@ data/
 *.log
 
 # Configuration files (examples should be committed)
-# shardforge.toml
+# rengo.toml
 
 # IDE files
 .vscode/

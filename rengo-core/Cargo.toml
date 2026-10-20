@@ -1,0 +1,20 @@
+[package]
+name = "rengo-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+description = "Core types and interfaces for Rengo distributed database"
+authors = ["Rengo Team"]
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Workspace dependencies
+serde.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+
+# Additional dependencies
+async-trait.workspace = true
+tokio.workspace = true
+tracing.workspace = true

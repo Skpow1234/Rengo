@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 
-use shardforge_core::{Key, Result, ShardForgeError, Value};
-use shardforge_storage::{MVCCStorage, StorageEngine};
+use rengo_core::{Key, Result, RengoError, Value};
+use rengo_storage::{MVCCStorage, StorageEngine};
 
 use crate::sql::aggregation::{contains_aggregate, extract_aggregates, GroupAggregationState};
 use crate::sql::ast::*;
@@ -127,7 +127,7 @@ impl QueryExecutor {
 
     async fn persist_catalog_entry(&mut self, schema: &TableSchema) -> Result<()> {
         let key = Key::from_string(&format!("__catalog__table__{}", schema.name));
-        let bytes = serde_json::to_vec(schema).map_err(|e| ShardForgeError::internal(format!(
+        let bytes = serde_json::to_vec(schema).map_err(|e| RengoError::internal(format!(
             "Failed to serialize table schema: {}",
             e
         )))?;
@@ -140,7 +140,7 @@ impl QueryExecutor {
         names.sort();
         let list_key = Key::from_string("__catalog__tables");
         let list_bytes = serde_json::to_vec(&names).map_err(|e| {
-            ShardForgeError::internal(format!("Failed to serialize catalog list: {}", e))
+            RengoError::internal(format!("Failed to serialize catalog list: {}", e))
         })?;
         self.context.storage.put(list_key, Value::new(&list_bytes)).await?;
         Ok(())
@@ -159,7 +159,7 @@ impl QueryExecutor {
             .collect();
         let list_key = Key::from_string("__catalog__tables");
         let list_bytes = serde_json::to_vec(&names).map_err(|e| {
-            ShardForgeError::internal(format!("Failed to serialize catalog list: {}", e))
+            RengoError::internal(format!("Failed to serialize catalog list: {}", e))
         })?;
         self.context.storage.put(list_key, Value::new(&list_bytes)).await?;
         Ok(())
@@ -192,7 +192,7 @@ impl QueryExecutor {
                     affected_rows: 0,
                 });
             } else {
-                return Err(ShardForgeError::Query {
+                return Err(RengoError::Query {
                     message: format!("Table '{}' already exists", stmt.name),
                 });
             }
@@ -246,7 +246,7 @@ impl QueryExecutor {
                     affected_rows: 0,
                 });
             } else {
-                return Err(ShardForgeError::Query {
+                return Err(RengoError::Query {
                     message: format!("Table '{}' does not exist", stmt.name),
                 });
             }
@@ -278,7 +278,7 @@ impl QueryExecutor {
         let schema_column_count = {
             let table_schema =
                 self.context.catalog.get_table(&stmt.table_name).ok_or_else(|| {
-                    ShardForgeError::Query {
+                    RengoError::Query {
                         message: format!("Table '{}' does not exist", stmt.table_name),
                     }
                 })?;
@@ -296,7 +296,7 @@ impl QueryExecutor {
             };
 
             if values.len() != expected_columns {
-                return Err(ShardForgeError::Query {
+                return Err(RengoError::Query {
                     message: format!(
                         "Expected {} values, got {} for row {}",
                         expected_columns,
@@ -336,7 +336,7 @@ impl QueryExecutor {
             .catalog
             .get_table(&stmt.table_name)
             .cloned()
-            .ok_or_else(|| ShardForgeError::Query {
+            .ok_or_else(|| RengoError::Query {
                 message: format!("Table '{}' does not exist", stmt.table_name),
             })?;
 
@@ -359,7 +359,7 @@ impl QueryExecutor {
                         .columns
                         .iter()
                         .position(|c| c.name == assignment.column)
-                        .ok_or_else(|| ShardForgeError::Query {
+                        .ok_or_else(|| RengoError::Query {
                             message: format!("Column '{}' not found", assignment.column),
                         })?;
 
@@ -388,7 +388,7 @@ impl QueryExecutor {
             .catalog
             .get_table(&stmt.table_name)
             .cloned()
-            .ok_or_else(|| ShardForgeError::Query {
+            .ok_or_else(|| RengoError::Query {
                 message: format!("Table '{}' does not exist", stmt.table_name),
             })?;
 
@@ -431,7 +431,7 @@ impl QueryExecutor {
             .catalog
             .get_table(&table_name)
             .cloned()
-            .ok_or_else(|| ShardForgeError::Query {
+            .ok_or_else(|| RengoError::Query {
                 message: format!("Table '{}' does not exist", table_name),
             })?;
 
@@ -465,7 +465,7 @@ impl QueryExecutor {
                     row.push(self.evaluate_expression(expr)?);
                 }
                 SelectItem::Wildcard => {
-                    return Err(ShardForgeError::Query {
+                    return Err(RengoError::Query {
                         message: "SELECT * requires a FROM clause".to_string(),
                     });
                 }
@@ -589,7 +589,7 @@ impl QueryExecutor {
                     column_names.push(col_name);
                 }
                 SelectItem::Wildcard => {
-                    return Err(ShardForgeError::Query {
+                    return Err(RengoError::Query {
                         message: "Cannot use * with aggregate functions".to_string(),
                     });
                 }
@@ -727,7 +727,7 @@ impl QueryExecutor {
             self.context
                 .catalog
                 .get_table(&stmt.table_name)
-                .ok_or_else(|| ShardForgeError::Query {
+                .ok_or_else(|| RengoError::Query {
                     message: format!("Table '{}' does not exist", stmt.table_name),
                 })?
                 .clone();
@@ -741,7 +741,7 @@ impl QueryExecutor {
                     affected_rows: 0,
                 });
             } else {
-                return Err(ShardForgeError::Query {
+                return Err(RengoError::Query {
                     message: format!("Index '{}' already exists", stmt.name),
                 });
             }
@@ -786,7 +786,7 @@ impl QueryExecutor {
         }
 
         if !found && !stmt.if_exists {
-            return Err(ShardForgeError::Query {
+            return Err(RengoError::Query {
                 message: format!("Index '{}' does not exist", stmt.name),
             });
         }
@@ -804,7 +804,7 @@ impl QueryExecutor {
             self.context
                 .catalog
                 .get_table(&stmt.name)
-                .ok_or_else(|| ShardForgeError::Query {
+                .ok_or_else(|| RengoError::Query {
                     message: format!("Table '{}' does not exist", stmt.name),
                 })?
                 .clone();
@@ -813,7 +813,7 @@ impl QueryExecutor {
             AlterTableAction::AddColumn(column_def) => {
                 // Check if column already exists
                 if table_schema.columns.iter().any(|c| c.name == column_def.name) {
-                    return Err(ShardForgeError::Query {
+                    return Err(RengoError::Query {
                         message: format!("Column '{}' already exists", column_def.name),
                     });
                 }
@@ -828,12 +828,12 @@ impl QueryExecutor {
             }
             AlterTableAction::AddConstraint(_constraint) => {
                 // TODO: Implement constraint addition
-                return Err(ShardForgeError::Query {
+                return Err(RengoError::Query {
                     message: "Adding constraints not yet implemented".to_string(),
                 });
             }
             _ => {
-                return Err(ShardForgeError::Query {
+                return Err(RengoError::Query {
                     message: "ALTER TABLE action not yet implemented".to_string(),
                 });
             }
@@ -887,7 +887,7 @@ impl QueryExecutor {
                         let right_bool = self.value_to_bool(&right_val)?;
                         Ok(left_bool || right_bool)
                     }
-                    _ => Err(ShardForgeError::Query {
+                    _ => Err(RengoError::Query {
                         message: format!("Operator {:?} not yet supported in WHERE clause", op),
                     }),
                 }
@@ -897,7 +897,7 @@ impl QueryExecutor {
                 let is_null = val.as_ref().is_empty();
                 Ok(if *negated { !is_null } else { is_null })
             }
-            _ => Err(ShardForgeError::Query {
+            _ => Err(RengoError::Query {
                 message: "Complex WHERE expressions not yet fully supported".to_string(),
             }),
         }
@@ -925,7 +925,7 @@ impl QueryExecutor {
                         .columns
                         .iter()
                         .position(|c| c.name == *col_name)
-                        .ok_or_else(|| ShardForgeError::Query {
+                        .ok_or_else(|| RengoError::Query {
                             message: format!("Column '{}' not found", col_name),
                         })?;
 
@@ -958,7 +958,7 @@ impl QueryExecutor {
                                 BinaryOperator::Multiply => left_int * right_int,
                                 BinaryOperator::Divide => {
                                     if right_int == 0 {
-                                        return Err(ShardForgeError::Query {
+                                        return Err(RengoError::Query {
                                             message: "Division by zero".to_string(),
                                         });
                                     }
@@ -969,17 +969,17 @@ impl QueryExecutor {
 
                             Ok(Value::new(&result.to_le_bytes()))
                         } else {
-                            Err(ShardForgeError::Query {
+                            Err(RengoError::Query {
                                 message: "Arithmetic operations require integer operands".to_string(),
                             })
                         }
                     }
-                    _ => Err(ShardForgeError::Query {
+                    _ => Err(RengoError::Query {
                         message: "Complex expressions not yet fully supported".to_string(),
                     }),
                 }
             }
-            _ => Err(ShardForgeError::Query {
+            _ => Err(RengoError::Query {
                 message: "Expression type not yet supported in execution".to_string(),
             }),
         }
@@ -1007,7 +1007,7 @@ impl QueryExecutor {
                 Literal::String(s) => Ok(Value::new(s.as_bytes())),
                 Literal::Binary(b) => Ok(Value::new(b)),
             },
-            _ => Err(ShardForgeError::Query {
+            _ => Err(RengoError::Query {
                 message: "Complex expressions not yet supported".to_string(),
             }),
         }
@@ -1026,12 +1026,12 @@ impl QueryExecutor {
                 if let Expression::Literal(Literal::Integer(id)) = right.as_ref() {
                     Ok(Key::new(format!("{}:{}", table_name, id).as_bytes()))
                 } else {
-                    Err(ShardForgeError::Query {
+                    Err(RengoError::Query {
                         message: "Point queries currently support integer IDs only".to_string(),
                     })
                 }
             }
-            _ => Err(ShardForgeError::Query {
+            _ => Err(RengoError::Query {
                 message: "Point queries require equality condition".to_string(),
             }),
         }
@@ -1059,7 +1059,7 @@ impl QueryExecutor {
 
         // Read number of columns
         if data.len() < 4 {
-            return Err(ShardForgeError::Query {
+            return Err(RengoError::Query {
                 message: "Invalid row data format".to_string(),
             });
         }
@@ -1070,7 +1070,7 @@ impl QueryExecutor {
         // Read each column value
         for _ in 0..column_count {
             if offset + 4 > data.len() {
-                return Err(ShardForgeError::Query {
+                return Err(RengoError::Query {
                     message: "Invalid row data format".to_string(),
                 });
             }
@@ -1084,7 +1084,7 @@ impl QueryExecutor {
             offset += 4;
 
             if offset + value_len > data.len() {
-                return Err(ShardForgeError::Query {
+                return Err(RengoError::Query {
                     message: "Invalid row data format".to_string(),
                 });
             }
@@ -1127,7 +1127,7 @@ impl QueryExecutor {
                             .columns
                             .iter()
                             .position(|c| c.name == *column_name)
-                            .ok_or_else(|| ShardForgeError::Query {
+                            .ok_or_else(|| RengoError::Query {
                                 message: format!("Column '{}' not found", column_name),
                             })?;
 
@@ -1140,7 +1140,7 @@ impl QueryExecutor {
                             selected_data.push(Value::new(b""));
                         }
                     } else {
-                        return Err(ShardForgeError::Query {
+                        return Err(RengoError::Query {
                             message: "Complex expressions in SELECT not yet supported".to_string(),
                         });
                     }
@@ -1171,7 +1171,7 @@ impl QueryExecutor {
                         let display_name = alias.as_ref().unwrap_or(column_name).clone();
                         column_names.push(display_name);
                     } else {
-                        return Err(ShardForgeError::Query {
+                        return Err(RengoError::Query {
                             message: "Complex expressions in SELECT not yet supported".to_string(),
                         });
                     }
@@ -1186,7 +1186,7 @@ impl QueryExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use shardforge_storage::MemoryEngine;
+    use rengo_storage::MemoryEngine;
 
     #[tokio::test]
     async fn test_create_table() {

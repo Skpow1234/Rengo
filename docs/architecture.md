@@ -2,14 +2,14 @@
 
 ## High-Level Architecture
 
-ShardForge follows a layered architecture designed for high availability, horizontal scalability, and strong consistency. The system is built around the RAFT consensus protocol with intelligent sharding for distributed data management.
+Rengo follows a layered architecture designed for high availability, horizontal scalability, and strong consistency. The system is built around the RAFT consensus protocol with intelligent sharding for distributed data management.
 
 ## Project Folder Structure
 
-Based on industry best practices for database systems, ShardForge organizes its codebase into a clear, modular folder structure that separates concerns while maintaining clean dependencies:
+Based on industry best practices for database systems, Rengo organizes its codebase into a clear, modular folder structure that separates concerns while maintaining clean dependencies:
 
 ```text
-shardforge/
+rengo/
 ├── src/                          # Main source code
 │   ├── core/                     # Core types and utilities
 │   │   ├── error.rs             # Error types and handling
@@ -69,7 +69,7 @@ shardforge/
 │   └── lib.rs                   # Main library entry point
 │
 ├── bin/                          # Binary executables
-│   └── shardforge.rs            # Main CLI binary
+│   └── rengo.rs            # Main CLI binary
 │
 ├── tests/                        # Integration tests
 │   ├── storage/                 # Storage engine tests
@@ -138,7 +138,7 @@ shardforge/
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                             ShardForge Cluster                                  │
+│                             Rengo Cluster                                  │
 ├─────────────────┬─────────────────┬─────────────────┬───────────────────────────┤
 │   CLI Tools     │  Query Router   │  Load Balancer  │   Management Console      │
 │                 │                 │                 │                           │

@@ -1,4 +1,4 @@
-# ShardForge Build Script for Windows
+# Rengo Build Script for Windows
 # This script handles building with appropriate feature flags for Windows
 
 param(
@@ -26,7 +26,7 @@ function Write-ColorOutput {
 }
 
 function Show-Help {
-    Write-ColorOutput "ShardForge Build Script for Windows" $Blue
+    Write-ColorOutput "Rengo Build Script for Windows" $Blue
     Write-ColorOutput "=====================================" $Blue
     Write-Host ""
     Write-Host "Usage: .\scripts\build.ps1 [options]"
@@ -56,7 +56,7 @@ if (-not (Test-Path "Cargo.toml")) {
     exit 1
 }
 
-Write-ColorOutput "🔧 ShardForge Build Script for Windows" $Blue
+Write-ColorOutput "🔧 Rengo Build Script for Windows" $Blue
 Write-ColorOutput "=====================================" $Blue
 
 # Clean if requested

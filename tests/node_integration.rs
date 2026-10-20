@@ -1,13 +1,13 @@
 //! End-to-end DatabaseNode integration tests
 
-use shardforge::config::{ShardForgeConfig, StorageEngineType};
-use shardforge::server::DatabaseNode;
+use rengo::config::{RengoConfig, StorageEngineType};
+use rengo::server::DatabaseNode;
 use tempfile::TempDir;
 
 #[tokio::test]
 async fn test_database_node_ddl_dml() {
     let temp = TempDir::new().unwrap();
-    let mut config = ShardForgeConfig::default();
+    let mut config = RengoConfig::default();
     config.cluster.data_directory = temp.path().join("data");
     config.storage.engine = StorageEngineType::Memory;
     config.node.bind_address = "127.0.0.1:0".to_string();
@@ -38,7 +38,7 @@ async fn test_database_node_ddl_dml() {
 #[tokio::test]
 async fn test_catalog_survives_reopen_with_memory_is_empty() {
     let temp = TempDir::new().unwrap();
-    let mut config = ShardForgeConfig::default();
+    let mut config = RengoConfig::default();
     config.cluster.data_directory = temp.path().join("data");
     config.storage.engine = StorageEngineType::Memory;
 
@@ -55,7 +55,7 @@ async fn test_catalog_survives_reopen_with_memory_is_empty() {
 #[tokio::test]
 async fn test_session_transactions() {
     let temp = TempDir::new().unwrap();
-    let mut config = ShardForgeConfig::default();
+    let mut config = RengoConfig::default();
     config.cluster.data_directory = temp.path().join("data");
     config.storage.engine = StorageEngineType::Memory;
 
@@ -82,7 +82,7 @@ async fn test_sled_catalog_and_data_survive_restart() {
     let temp = TempDir::new().unwrap();
     let data_dir = temp.path().join("sled-data");
 
-    let mut config = ShardForgeConfig::default();
+    let mut config = RengoConfig::default();
     config.cluster.data_directory = data_dir.clone();
     config.storage.engine = StorageEngineType::Sled;
     config.node.bind_address = "127.0.0.1:0".to_string();

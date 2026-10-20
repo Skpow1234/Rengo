@@ -17,7 +17,7 @@ Redundant workflows (`comprehensive`, `pr-checks`, `warnings`, `code-quality`, `
 - **Concurrency** cancels stale runs on the same ref
 - **`ci-success`** job aggregates required results for a single branch-protection check
 - Clippy **denies `clippy::correctness`** (real bugs); style/docs debt does not soft-fail the gate via `|| true` — it is simply out of the deny set until cleaned up
-- Docker image ships with `/etc/shardforge/config.toml` and starts the TCP SQL listener by default
+- Docker image ships with `/etc/rengo/config.toml` and starts the TCP SQL listener by default
 
 ## Local equivalents
 
