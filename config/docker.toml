@@ -1,0 +1,36 @@
+# Default config baked into the container image
+[cluster]
+name = "docker-cluster"
+data_directory = "/tmp/shardforge-data"
+
+[node]
+name = "shardforge-docker"
+bind_address = "0.0.0.0:5432"
+max_connections = 100
+connection_timeout_sec = 30
+
+[storage]
+engine = "memory"
+block_cache_size_mb = 128
+write_buffer_size_mb = 64
+max_write_buffer_number = 4
+compression = "lz4"
+enable_statistics = true
+
+[network]
+tls_enabled = false
+max_message_size_mb = 4
+connection_pool_size = 10
+keep_alive_interval_sec = 60
+
+[logging]
+level = "info"
+format = "pretty"
+max_file_size_mb = 100
+max_files = 5
+
+[monitoring]
+enabled = true
+bind_address = "0.0.0.0:9090"
+tracing_enabled = false
+service_name = "shardforge"

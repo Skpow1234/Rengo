@@ -6,12 +6,15 @@
 # Check for security advisories
 vulnerability = "deny"
 unmaintained = "warn"
-unsound = "deny"
+# Transitive unsound advisories (anyhow/rand) tracked; do not soft-fail vulns
+unsound = "warn"
 notice = "warn"
 
 # Ignore specific advisories if needed
 ignore = [
-    # Add specific advisory IDs to ignore here
+    # Tracked: bump when crates publish fixes we can take without breaking APIs
+    "RUSTSEC-2026-0190", # anyhow Error::downcast_mut unsound
+    "RUSTSEC-2026-0097", # rand custom logger unsound
 ]
 
 [licenses]

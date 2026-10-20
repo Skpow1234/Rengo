@@ -39,6 +39,10 @@ path = "tests/config/config_integration.rs"
 name = "node_integration"
 path = "tests/node_integration.rs"
 
+[[bench]]
+name = "storage"
+harness = false
+
 [features]
 default = ["sled"]
 rocksdb = ["dep:rocksdb", "shardforge-storage/rocksdb"]

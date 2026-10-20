@@ -1,298 +1,204 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  CARGO_INCREMENTAL: 0
 
 jobs:
-  # Format and lint checks (no matrix strategy)
-  format-lint:
-    name: Format and Lint
+  # ── Fast gate: every PR / push ──────────────────────────────────────────
+  lint:
+    name: Format & Clippy
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
-      - name: Cache cargo dependencies
-        uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-format-lint-${{ hashFiles('**/Cargo.lock') }}
-          workspaces: |
-            . -> target
-            shardforge-cli -> shardforge-cli/target
-            shardforge-config -> shardforge-config/target
-            shardforge-core -> shardforge-core/target
-            shardforge-storage -> shardforge-storage/target
+          shared-key: lint
 
-      - name: Check formatting
-        run: |
-          echo "🔍 Checking code formatting..."
-          cargo fmt --all -- --check
+      - name: rustfmt
+        run: cargo fmt --all -- --check
 
-      - name: Run clippy (warnings allowed)
-        run: |
-          cargo clippy --all-targets --all-features -- -W clippy::all -W clippy::pedantic -W clippy::nursery -W clippy::cargo || echo "⚠️ Clippy warnings found but continuing..."
+      - name: clippy (fail on correctness)
+        run: >
+          cargo clippy --workspace --all-targets
+          --features sled --no-default-features
+          -- -D clippy::correctness
+          -A missing_docs
+          -A clippy::must_use_candidate
+          -A clippy::module_name_repetitions
+          -A clippy::new_without_default
 
-  # Build and test on multiple platforms
   test:
-    name: Test on ${{ matrix.os }} (${{ matrix.features }})
+    name: Test (${{ matrix.os }} / ${{ matrix.features }})
+    needs: lint
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
-          # Primary test combinations - most important
           - os: ubuntu-latest
             features: sled
-            priority: high
           - os: ubuntu-latest
             features: rocksdb
-            priority: high
-          # Secondary combinations - less critical
           - os: windows-latest
             features: sled
-            priority: medium
           - os: macos-latest
             features: sled
-            priority: medium
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo dependencies
-        uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ runner.os }}-${{ matrix.features }}-${{ hashFiles('**/Cargo.lock') }}
-          workspaces: |
-            . -> target
-            shardforge-cli -> shardforge-cli/target
-            shardforge-config -> shardforge-config/target
-            shardforge-core -> shardforge-core/target
-            shardforge-storage -> shardforge-storage/target
+          shared-key: test-${{ matrix.os }}-${{ matrix.features }}
 
-      - name: Install system dependencies (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
+      - name: System deps (Ubuntu)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev pkg-config protobuf-compiler
+          sudo apt-get install -y build-essential libssl-dev pkg-config protobuf-compiler clang
 
-      - name: Install system dependencies (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install openssl pkg-config cmake protobuf
-          # Set up environment for RocksDB
-          echo "PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig" >> $GITHUB_ENV
-          echo "OPENSSL_ROOT_DIR=/usr/local/opt/openssl" >> $GITHUB_ENV
+      - name: System deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install openssl pkg-config cmake protobuf
 
-      - name: Install system dependencies (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          # Install Visual Studio Build Tools for RocksDB
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
-          # Refresh environment variables
-          refreshenv
-
-      - name: Build with ${{ matrix.features }} features
-        run: |
-          echo "🔨 Building with ${{ matrix.features }} features on ${{ matrix.os }}..."
-          cargo build --all-targets --features ${{ matrix.features }} --no-default-features
+      - name: Build
         shell: bash
+        run: cargo build --all-targets --features ${{ matrix.features }} --no-default-features
 
-      - name: Run tests with ${{ matrix.features }} features
+      - name: Test (workspace + integration)
+        shell: bash
         run: |
-          echo "🧪 Testing with ${{ matrix.features }} features on ${{ matrix.os }}..."
           cargo test --workspace --features ${{ matrix.features }} --no-default-features
-        shell: bash
+          cargo test --tests --features ${{ matrix.features }} --no-default-features
 
-      - name: Run benchmarks (if available)
-        run: |
-          if [ "${{ matrix.features }}" = "rocksdb" ]; then
-            cargo bench --features rocksdb --no-default-features || echo "⚠️ Benchmarks failed but continuing..."
-          else
-            cargo bench --features sled --no-default-features || echo "⚠️ Benchmarks failed but continuing..."
-          fi
-        shell: bash
-
-  # Security audit
   security:
     name: Security Audit
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: audit
+          save-if: false
 
       - name: Install cargo-audit
-        run: cargo install cargo-audit
+        run: cargo install cargo-audit --locked || cargo install cargo-audit
 
-      - name: Run security audit
+      - name: cargo audit (fail on vulns)
         run: cargo audit
 
-  # Documentation
+      - name: cargo deny
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          arguments: --all-features
+
   docs:
-    name: Documentation
+    name: Docs
+    needs: lint
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
         with:
-          components: rust-docs
+          shared-key: docs
 
-      - name: Cache cargo dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ runner.os }}-docs-${{ hashFiles('**/Cargo.lock') }}
-          workspaces: |
-            . -> target
-            shardforge-cli -> shardforge-cli/target
-            shardforge-config -> shardforge-config/target
-            shardforge-core -> shardforge-core/target
-            shardforge-storage -> shardforge-storage/target
-
-      - name: Build documentation
+      - name: System deps
         run: |
-          # Build docs with sled feature (most compatible)
-          cargo doc --features sled --no-default-features --no-deps
-          # Also build docs with rocksdb feature if possible
-          cargo doc --features rocksdb --no-default-features --no-deps || echo "RocksDB docs failed, continuing with sled docs"
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config protobuf-compiler
 
-      - name: Deploy documentation (on main branch)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: echo "Documentation would be deployed here"
+      - name: cargo doc
+        env:
+          RUSTDOCFLAGS: -D warnings -A missing_docs
+        run: cargo doc --workspace --features sled --no-default-features --no-deps
 
-  # Performance benchmarks
-  benchmarks:
-    name: Performance Benchmarks
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ runner.os }}-benchmarks-${{ hashFiles('**/Cargo.lock') }}
-          workspaces: |
-            . -> target
-            shardforge-cli -> shardforge-cli/target
-            shardforge-config -> shardforge-config/target
-            shardforge-core -> shardforge-core/target
-            shardforge-storage -> shardforge-storage/target
-
-      - name: Run benchmarks
-        run: |
-          cargo bench --features sled --no-default-features || echo "⚠️ Benchmarks failed but continuing..."
-        shell: bash
-
-  # Release preparation
-  release-check:
-    name: Release Check
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ runner.os }}-release-check-${{ hashFiles('**/Cargo.lock') }}
-          workspaces: |
-            . -> target
-            shardforge-cli -> shardforge-cli/target
-            shardforge-config -> shardforge-config/target
-            shardforge-core -> shardforge-core/target
-            shardforge-storage -> shardforge-storage/target
-
-      - name: Build release binaries
-        run: |
-          cargo build --release --all-targets --features sled --no-default-features
-
-      - name: Test release build
-        run: |
-          cargo test --release --workspace --features sled --no-default-features
-        shell: bash
-
-  # Docker build and test
   docker:
-    name: Docker Build
+    name: Docker
+    needs: lint
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-
-      - name: Verify build context
+      - name: Verify context
         run: |
-          echo "🔍 Verifying build context..."
-          echo "📊 Build context size:"
-          du -sh .
-          echo "📋 Directory listing:"
-          ls -la
-          echo "📋 Checking Cargo.lock..."
-          ls -la Cargo.lock
-          echo "📋 Checking Cargo.toml..."
-          ls -la Cargo.toml
-          echo "📋 Checking workspace structure..."
-          ls -la shardforge-*/
-          echo "📋 Checking .dockerignore:"
-          cat .dockerignore
-          echo "📋 Testing docker build context:"
-          docker build -f Dockerfile.debug -t debug-context . || echo "Debug build failed"
+          test -f .dockerignore
+          test -f Cargo.lock
+          test -f Cargo.toml
+          test -f Dockerfile
+          echo "Build context OK ($(du -sh . | cut -f1))"
 
-      - name: Build Docker image (optimized)
-        uses: docker/build-push-action@v5
+      - name: Build image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: false
-          tags: shardforge:test
+          load: true
+          tags: shardforge:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
 
-      - name: Test Docker image
+      - name: Smoke test container
         run: |
-          # Test that the container starts
-          docker run --rm -d --name shardforge-test -p 5432:5432 shardforge:test
-          sleep 5
-          # Check if container is running
-          if docker ps | grep -q shardforge-test; then
-            echo "✅ Docker container started successfully"
-          else
-            echo "❌ Docker container failed to start"
-            docker logs shardforge-test
+          set -euo pipefail
+          docker run --rm shardforge:ci --version
+          docker run --rm -d --name shardforge-ci -p 5432:5432 shardforge:ci
+          sleep 3
+          if ! docker ps | grep -q shardforge-ci; then
+            echo "Container exited early:"
+            docker logs shardforge-ci || true
             exit 1
           fi
-          # Clean up
-          docker stop shardforge-test || true
-          docker rm shardforge-test || true
+          docker logs shardforge-ci
+          docker stop shardforge-ci
+
+  # ── Required status aggregator ──────────────────────────────────────────
+  ci-success:
+    name: CI Success
+    if: always()
+    needs: [lint, test, security, docs, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required jobs
+        run: |
+          echo "lint=${{ needs.lint.result }}"
+          echo "test=${{ needs.test.result }}"
+          echo "security=${{ needs.security.result }}"
+          echo "docs=${{ needs.docs.result }}"
+          echo "docker=${{ needs.docker.result }}"
+          if [[ "${{ needs.lint.result }}" != "success" \
+             || "${{ needs.test.result }}" != "success" \
+             || "${{ needs.security.result }}" != "success" \
+             || "${{ needs.docs.result }}" != "success" \
+             || "${{ needs.docker.result }}" != "success" ]]; then
+            echo "One or more required jobs failed"
+            exit 1
+          fi
+          echo "All required CI jobs passed"

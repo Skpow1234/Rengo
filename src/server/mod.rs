@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use shardforge_config::{ShardForgeConfig, StorageEngineType};
-use shardforge_core::{Result, ShardForgeError};
+use shardforge_core::{Result, ShardForgeError, TransactionId};
 use shardforge_storage::{MVCCStorage, StorageConfig, StorageEngine, StorageEngineFactory};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
@@ -32,6 +32,8 @@ pub struct NodeStatus {
     pub storage_engine: String,
     /// Number of tables in the catalog
     pub table_count: usize,
+    /// Whether an explicit SQL transaction session is open
+    pub in_transaction: bool,
     /// Version string
     pub version: String,
 }
@@ -41,6 +43,8 @@ pub struct DatabaseNode {
     config: ShardForgeConfig,
     executor: Arc<Mutex<QueryExecutor>>,
     tx_manager: Arc<TransactionManager>,
+    /// Explicit session transaction started by BEGIN (shared with connection handle)
+    active_tx: Arc<Mutex<Option<TransactionId>>>,
     bind_address: String,
     storage_engine_name: String,
     running: Arc<AtomicBool>,
@@ -112,6 +116,7 @@ impl DatabaseNode {
             config,
             executor,
             tx_manager,
+            active_tx: Arc::new(Mutex::new(None)),
             bind_address,
             storage_engine_name,
             running: Arc::new(AtomicBool::new(false)),
@@ -126,62 +131,16 @@ impl DatabaseNode {
         Self::from_config(config).await
     }
 
-    /// Execute a single SQL statement (parse → optional txn → execute)
+    /// Execute a single SQL statement (parse → session/auto txn → execute)
     pub async fn execute_sql(&self, sql: &str) -> Result<QueryResult> {
-        let mut parser = SqlParser::new();
-        let statement = parser.parse(sql)?;
-
-        match statement {
-            Statement::Begin(_) => {
-                let _ = self
-                    .tx_manager
-                    .begin_transaction(TransactionConfig::default())
-                    .await?;
-                return Ok(QueryResult {
-                    columns: vec![],
-                    rows: vec![],
-                    affected_rows: 0,
-                });
-            }
-            Statement::Commit(_) | Statement::Rollback(_) => {
-                // Explicit multi-statement sessions are tracked separately later;
-                // for now these are accepted as no-ops after auto-commit paths.
-                return Ok(QueryResult {
-                    columns: vec![],
-                    rows: vec![],
-                    affected_rows: 0,
-                });
-            }
-            _ => {}
-        }
-
-        let tx_id = self
-            .tx_manager
-            .begin_transaction(TransactionConfig::default())
-            .await?;
-
-        let result = {
-            let mut executor = self.executor.lock().await;
-            executor.execute(statement).await
-        };
-
-        match result {
-            Ok(query_result) => {
-                if let Err(e) = self.tx_manager.commit_transaction(tx_id).await {
-                    tracing::warn!("Transaction commit failed after successful execute: {}", e);
-                }
-                let count = {
-                    let executor = self.executor.lock().await;
-                    executor.context.catalog.list_tables().len()
-                };
-                *self.table_count.write().await = count;
-                Ok(query_result)
-            }
-            Err(e) => {
-                let _ = self.tx_manager.rollback_transaction(tx_id).await;
-                Err(e)
-            }
-        }
+        execute_sql_inner(
+            &self.executor,
+            &self.tx_manager,
+            &self.active_tx,
+            &self.table_count,
+            sql,
+        )
+        .await
     }
 
     /// Current node status snapshot
@@ -191,6 +150,7 @@ impl DatabaseNode {
             bind_address: self.bind_address.clone(),
             storage_engine: self.storage_engine_name.clone(),
             table_count: *self.table_count.read().await,
+            in_transaction: self.active_tx.lock().await.is_some(),
             version: crate::VERSION.to_string(),
         }
     }
@@ -264,6 +224,7 @@ impl DatabaseNode {
         Arc::new(DatabaseNodeHandle {
             executor: Arc::clone(&self.executor),
             tx_manager: Arc::clone(&self.tx_manager),
+            active_tx: Arc::clone(&self.active_tx),
             table_count: Arc::clone(&self.table_count),
         })
     }
@@ -300,38 +261,118 @@ impl DatabaseNode {
 struct DatabaseNodeHandle {
     executor: Arc<Mutex<QueryExecutor>>,
     tx_manager: Arc<TransactionManager>,
+    active_tx: Arc<Mutex<Option<TransactionId>>>,
     table_count: Arc<RwLock<usize>>,
 }
 
 impl DatabaseNodeHandle {
     async fn execute_sql(&self, sql: &str) -> Result<QueryResult> {
-        let mut parser = SqlParser::new();
-        let statement = parser.parse(sql)?;
+        execute_sql_inner(
+            &self.executor,
+            &self.tx_manager,
+            &self.active_tx,
+            &self.table_count,
+            sql,
+        )
+        .await
+    }
+}
 
-        let tx_id = self
-            .tx_manager
-            .begin_transaction(TransactionConfig::default())
-            .await?;
+async fn execute_sql_inner(
+    executor: &Arc<Mutex<QueryExecutor>>,
+    tx_manager: &Arc<TransactionManager>,
+    active_tx: &Arc<Mutex<Option<TransactionId>>>,
+    table_count: &Arc<RwLock<usize>>,
+    sql: &str,
+) -> Result<QueryResult> {
+    let mut parser = SqlParser::new();
+    let statement = parser.parse(sql)?;
 
-        let result = {
-            let mut executor = self.executor.lock().await;
-            executor.execute(statement).await
-        };
-
-        match result {
-            Ok(query_result) => {
-                let _ = self.tx_manager.commit_transaction(tx_id).await;
-                let count = {
-                    let executor = self.executor.lock().await;
-                    executor.context.catalog.list_tables().len()
-                };
-                *self.table_count.write().await = count;
-                Ok(query_result)
+    match &statement {
+        Statement::Begin(_) => {
+            let mut guard = active_tx.lock().await;
+            if guard.is_some() {
+                return Err(ShardForgeError::Transaction {
+                    message: "Transaction already in progress".to_string(),
+                });
             }
-            Err(e) => {
-                let _ = self.tx_manager.rollback_transaction(tx_id).await;
-                Err(e)
+            let tx_id = tx_manager
+                .begin_transaction(TransactionConfig::default())
+                .await?;
+            *guard = Some(tx_id);
+            return Ok(QueryResult {
+                columns: vec![],
+                rows: vec![],
+                affected_rows: 0,
+            });
+        }
+        Statement::Commit(_) => {
+            let mut guard = active_tx.lock().await;
+            let Some(tx_id) = guard.take() else {
+                return Err(ShardForgeError::Transaction {
+                    message: "No active transaction to COMMIT".to_string(),
+                });
+            };
+            tx_manager.commit_transaction(tx_id).await?;
+            return Ok(QueryResult {
+                columns: vec![],
+                rows: vec![],
+                affected_rows: 0,
+            });
+        }
+        Statement::Rollback(_) => {
+            let mut guard = active_tx.lock().await;
+            let Some(tx_id) = guard.take() else {
+                return Err(ShardForgeError::Transaction {
+                    message: "No active transaction to ROLLBACK".to_string(),
+                });
+            };
+            tx_manager.rollback_transaction(tx_id).await?;
+            return Ok(QueryResult {
+                columns: vec![],
+                rows: vec![],
+                affected_rows: 0,
+            });
+        }
+        _ => {}
+    }
+
+    let session_tx = { active_tx.lock().await.clone() };
+    let (tx_id, auto_commit) = if let Some(tx_id) = session_tx {
+        (tx_id, false)
+    } else {
+        (
+            tx_manager
+                .begin_transaction(TransactionConfig::default())
+                .await?,
+            true,
+        )
+    };
+
+    let result = {
+        let mut exec = executor.lock().await;
+        exec.execute(statement).await
+    };
+
+    match result {
+        Ok(query_result) => {
+            if auto_commit {
+                if let Err(e) = tx_manager.commit_transaction(tx_id).await {
+                    tracing::warn!("Auto-commit failed after successful execute: {}", e);
+                }
             }
+            let count = {
+                let exec = executor.lock().await;
+                exec.context.catalog.list_tables().len()
+            };
+            *table_count.write().await = count;
+            Ok(query_result)
+        }
+        Err(e) => {
+            if auto_commit {
+                let _ = tx_manager.rollback_transaction(tx_id).await;
+            }
+            Err(e)
         }
     }
 }
@@ -427,5 +468,46 @@ mod tests {
         let status = node.status().await;
         assert_eq!(status.table_count, 1);
         assert!(!status.running);
+        assert!(!status.in_transaction);
+    }
+
+    #[tokio::test]
+    async fn test_session_transaction_begin_commit() {
+        let temp = TempDir::new().unwrap();
+        let mut config = ShardForgeConfig::default();
+        config.cluster.data_directory = temp.path().to_path_buf();
+        config.storage.engine = StorageEngineType::Memory;
+
+        let node = DatabaseNode::from_config(config).await.unwrap();
+        node.execute_sql("CREATE TABLE t (id INTEGER)").await.unwrap();
+
+        node.execute_sql("BEGIN").await.unwrap();
+        assert!(node.status().await.in_transaction);
+
+        node.execute_sql("INSERT INTO t (id) VALUES (1)").await.unwrap();
+        node.execute_sql("COMMIT").await.unwrap();
+        assert!(!node.status().await.in_transaction);
+
+        let rows = node.execute_sql("SELECT id FROM t").await.unwrap();
+        assert_eq!(rows.rows.len(), 1);
+
+        // Nested BEGIN should fail
+        node.execute_sql("BEGIN").await.unwrap();
+        assert!(node.execute_sql("BEGIN").await.is_err());
+        node.execute_sql("ROLLBACK").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_session_transaction_rollback_clears_flag() {
+        let temp = TempDir::new().unwrap();
+        let mut config = ShardForgeConfig::default();
+        config.cluster.data_directory = temp.path().to_path_buf();
+        config.storage.engine = StorageEngineType::Memory;
+
+        let node = DatabaseNode::from_config(config).await.unwrap();
+        node.execute_sql("BEGIN").await.unwrap();
+        node.execute_sql("ROLLBACK").await.unwrap();
+        assert!(!node.status().await.in_transaction);
+        assert!(node.execute_sql("COMMIT").await.is_err());
     }
 }

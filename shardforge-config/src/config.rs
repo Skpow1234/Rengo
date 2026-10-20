@@ -115,10 +115,11 @@ pub struct MonitoringSection {
 }
 
 /// Storage engine types
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum StorageEngineType {
     /// RocksDB (recommended for production)
+    #[default]
     #[serde(alias = "RocksDB", alias = "rocks_db")]
     RocksDB,
     /// Sled (pure Rust alternative)
@@ -129,14 +130,8 @@ pub enum StorageEngineType {
     Memory,
 }
 
-impl Default for StorageEngineType {
-    fn default() -> Self {
-        Self::RocksDB
-    }
-}
-
 /// Compression algorithms
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CompressionType {
     /// No compression
@@ -144,19 +139,14 @@ pub enum CompressionType {
     /// Snappy compression (fast)
     Snappy,
     /// LZ4 compression (balanced)
+    #[default]
     Lz4,
     /// Zstandard compression (high compression)
     Zstd,
 }
 
-impl Default for CompressionType {
-    fn default() -> Self {
-        Self::Lz4
-    }
-}
-
 /// Log levels
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     /// Trace level
@@ -164,6 +154,7 @@ pub enum LogLevel {
     /// Debug level
     Debug,
     /// Info level
+    #[default]
     Info,
     /// Warning level
     Warn,
@@ -171,26 +162,15 @@ pub enum LogLevel {
     Error,
 }
 
-impl Default for LogLevel {
-    fn default() -> Self {
-        Self::Info
-    }
-}
-
 /// Log formats
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogFormat {
     /// JSON format (structured)
     Json,
     /// Human-readable format
+    #[default]
     Pretty,
-}
-
-impl Default for LogFormat {
-    fn default() -> Self {
-        Self::Pretty
-    }
 }
 
 impl Default for ClusterSection {

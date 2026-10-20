@@ -13,6 +13,7 @@ Start here if you are new to the project.
 | [Deployment](deployment.md) | Single-node, cluster, and IaC sketches |
 | [Docker](DOCKER.md) | Compose profiles, ports, images |
 | [Build](build.md) | Platform builds and storage features |
+| [CI/CD](ci.md) | Pipelines, gates, and local equivalents |
 
 ## Design
 

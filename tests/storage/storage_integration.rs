@@ -9,7 +9,7 @@ async fn test_memory_engine_integration() {
     let config = StorageConfig::default();
     let temp_dir = TempDir::new().unwrap();
 
-    let engine = StorageEngineFactory::create(
+    let mut engine = StorageEngineFactory::create(
         shardforge_config::StorageEngineType::Memory,
         &config,
         temp_dir.path()
@@ -98,7 +98,7 @@ async fn test_storage_engine_error_handling() {
     let config = StorageConfig::default();
     let temp_dir = TempDir::new().unwrap();
 
-    let engine = StorageEngineFactory::create(
+    let mut engine = StorageEngineFactory::create(
         shardforge_config::StorageEngineType::Memory,
         &config,
         temp_dir.path()
@@ -123,14 +123,15 @@ async fn test_storage_engine_large_data() {
     let config = StorageConfig::default();
     let temp_dir = TempDir::new().unwrap();
 
-    let engine = StorageEngineFactory::create(
+    let mut engine = StorageEngineFactory::create(
         shardforge_config::StorageEngineType::Memory,
         &config,
         temp_dir.path()
     ).await.unwrap();
 
     // Test with large values
-    let large_value = Value::new(vec![42; 1024 * 1024]); // 1MB
+    let large_bytes = vec![42u8; 1024 * 1024]; // 1MB
+    let large_value = Value::new(&large_bytes);
     let key = Key::from_string("large_key");
 
     engine.put(key.clone(), large_value.clone()).await.unwrap();
@@ -162,7 +163,7 @@ async fn test_storage_engine_flush_and_compact() {
     let config = StorageConfig::default();
     let temp_dir = TempDir::new().unwrap();
 
-    let engine = StorageEngineFactory::create(
+    let mut engine = StorageEngineFactory::create(
         shardforge_config::StorageEngineType::Memory,
         &config,
         temp_dir.path()

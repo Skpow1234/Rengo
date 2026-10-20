@@ -562,7 +562,7 @@ mod tests {
         assert_eq!(key.to_i64().unwrap(), 42);
 
         // Float conversion
-        let key = IndexKey::from_f64(3.14);
+        let key = IndexKey::from_f64(std::f64::consts::PI);
         assert_eq!(key.as_bytes().len(), 8);
     }
 

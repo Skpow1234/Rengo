@@ -21,23 +21,25 @@ ShardForge now has a **single-node composition root** (`DatabaseNode`) that open
 | gRPC tonic serve | Stub (service can attach a node; no real serve yet) |
 | Sharding / multi-region / enterprise security | Design / docs only |
 
-## What just landed (composition milestone)
+## What just landed
 
 - [x] `DatabaseNode` owns config → storage → catalog → SQL → transactions
 - [x] `shardforge start` binds and serves newline-delimited JSON `{"sql":"..."}`
 - [x] `shardforge sql "..."` executes in-process via `DatabaseNode`
 - [x] Catalog persisted as JSON; row ids via `__seq__*` ; table scans via `scan_prefix`
 - [x] Integration test discovery via `[[test]]` + `tests/node_integration.rs`
+- [x] **Robust CI** — single fail-hard pipeline; removed soft-fail duplicate workflows
+- [x] **Session transactions** — `BEGIN` / `COMMIT` / `ROLLBACK` tracked on the node
+- [x] **Sled restart durability** — catalog + rows survive reopen (`test_sled_catalog_and_data_survive_restart`)
 
 ## Near-term next (still open)
 
 1. Real tonic gRPC serve (`grpc-enabled` + protoc) streaming query results
-2. Session-scoped transactions (BEGIN…COMMIT across statements)
-3. Durable catalog/data verification on **sled/rocksdb** restart
-4. Wire SQL writes through MVCC write-sets (not only txn lifecycle)
-5. Raft election + peer transport, then propose writes through consensus
-6. Unify dual CLI (`bin/` vs `shardforge-cli`) and workspace membership
-7. Collapse soft-fail CI; keep integration tests green
+2. Wire SQL writes through MVCC write-sets (not only txn lifecycle)
+3. Raft election + peer transport, then propose writes through consensus
+4. Unify dual CLI (`bin/` vs `shardforge-cli`) and workspace membership
+5. RocksDB restart durability parity with sled
+6. Session-local write buffering so ROLLBACK undoes DML (today txn flag is real; KV writes still land immediately)
 
 Full list: [milestones-backlog.md](milestones-backlog.md).
 
