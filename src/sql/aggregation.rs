@@ -1,6 +1,6 @@
 //! Aggregate function implementation
 
-use rengo_core::{Result, RengoError, Value};
+use rengo_core::{RengoError, Result, Value};
 use std::collections::HashMap;
 
 use crate::sql::ast::Expression;
@@ -92,12 +92,8 @@ impl AggregateAccumulator {
     /// Get the final aggregated value
     pub fn finalize(&self) -> Result<Value> {
         match self.function {
-            AggregateFunction::Count => {
-                Ok(Value::new(&self.count.to_le_bytes()))
-            }
-            AggregateFunction::Sum => {
-                Ok(Value::new(&self.sum.to_le_bytes()))
-            }
+            AggregateFunction::Count => Ok(Value::new(&self.count.to_le_bytes())),
+            AggregateFunction::Sum => Ok(Value::new(&self.sum.to_le_bytes())),
             AggregateFunction::Avg => {
                 if self.count == 0 {
                     Ok(Value::new(&0.0_f64.to_le_bytes()))
@@ -307,4 +303,3 @@ pub fn extract_aggregates(exprs: &[Expression]) -> Vec<(usize, AggregateFunction
 
     aggregates
 }
-

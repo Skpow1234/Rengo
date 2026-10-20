@@ -1,7 +1,7 @@
 //! Query statistics and cost estimation
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Table statistics for cost-based optimization
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -64,9 +64,7 @@ pub struct StatisticsCollector {
 impl StatisticsCollector {
     /// Create a new statistics collector
     pub fn new() -> Self {
-        Self {
-            statistics: HashMap::new(),
-        }
+        Self { statistics: HashMap::new() }
     }
 
     /// Get statistics for a table
@@ -117,11 +115,7 @@ impl StatisticsCollector {
     }
 
     /// Estimate the number of rows returned by a query
-    pub fn estimate_row_count(
-        &self,
-        table_name: &str,
-        selectivity: f64,
-    ) -> u64 {
+    pub fn estimate_row_count(&self, table_name: &str, selectivity: f64) -> u64 {
         if let Some(table_stats) = self.get_table_stats(table_name) {
             (table_stats.row_count as f64 * selectivity) as u64
         } else {
@@ -269,7 +263,7 @@ mod tests {
     fn test_table_statistics() {
         let mut stats = TableStatistics::new("users".to_string());
         stats.set_row_count(1000);
-        
+
         let mut col_stats = ColumnStatistics::new("id".to_string());
         col_stats.set_distinct_count(1000);
         stats.add_column_stats(col_stats);
@@ -281,14 +275,14 @@ mod tests {
     #[test]
     fn test_selectivity_estimation() {
         let mut collector = StatisticsCollector::new();
-        
+
         let mut stats = TableStatistics::new("users".to_string());
         stats.set_row_count(1000);
-        
+
         let mut col_stats = ColumnStatistics::new("status".to_string());
         col_stats.set_distinct_count(10);
         stats.add_column_stats(col_stats);
-        
+
         collector.update_table_stats(stats);
 
         let selectivity = collector.estimate_selectivity("users", "status", "=", b"active");
@@ -298,15 +292,14 @@ mod tests {
     #[test]
     fn test_cost_estimation() {
         let cost_model = CostModel::new();
-        
+
         let seq_scan_cost = cost_model.estimate_seq_scan_cost(1000, 100);
         assert!(seq_scan_cost > 0.0);
-        
+
         let index_scan_cost = cost_model.estimate_index_scan_cost(0.1, 1000);
         assert!(index_scan_cost > 0.0);
-        
+
         // Index scan should be cheaper for selective queries
         assert!(index_scan_cost < seq_scan_cost);
     }
 }
-

@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use rengo_core::{Key, Result, RengoError, Value};
+use rengo_core::{Key, RengoError, Result, Value};
 use rengo_storage::{MVCCStorage, StorageEngine};
 
 use crate::sql::aggregation::{contains_aggregate, extract_aggregates, GroupAggregationState};
@@ -127,10 +127,9 @@ impl QueryExecutor {
 
     async fn persist_catalog_entry(&mut self, schema: &TableSchema) -> Result<()> {
         let key = Key::from_string(&format!("__catalog__table__{}", schema.name));
-        let bytes = serde_json::to_vec(schema).map_err(|e| RengoError::internal(format!(
-            "Failed to serialize table schema: {}",
-            e
-        )))?;
+        let bytes = serde_json::to_vec(schema).map_err(|e| {
+            RengoError::internal(format!("Failed to serialize table schema: {}", e))
+        })?;
         self.context.storage.put(key, Value::new(&bytes)).await?;
 
         let mut names = self.context.catalog.list_tables();
@@ -174,10 +173,7 @@ impl QueryExecutor {
             }
             None => 1,
         };
-        self.context
-            .storage
-            .put(seq_key, Value::from_string(&next.to_string()))
-            .await?;
+        self.context.storage.put(seq_key, Value::from_string(&next.to_string())).await?;
         Ok(next)
     }
 
@@ -331,13 +327,11 @@ impl QueryExecutor {
 
     /// Execute UPDATE statement
     async fn execute_update(&mut self, stmt: UpdateStatement) -> Result<QueryResult> {
-        let table_schema = self
-            .context
-            .catalog
-            .get_table(&stmt.table_name)
-            .cloned()
-            .ok_or_else(|| RengoError::Query {
-                message: format!("Table '{}' does not exist", stmt.table_name),
+        let table_schema =
+            self.context.catalog.get_table(&stmt.table_name).cloned().ok_or_else(|| {
+                RengoError::Query {
+                    message: format!("Table '{}' does not exist", stmt.table_name),
+                }
             })?;
 
         let mut affected_rows = 0;
@@ -383,13 +377,11 @@ impl QueryExecutor {
 
     /// Execute DELETE statement
     async fn execute_delete(&mut self, stmt: DeleteStatement) -> Result<QueryResult> {
-        let table_schema = self
-            .context
-            .catalog
-            .get_table(&stmt.table_name)
-            .cloned()
-            .ok_or_else(|| RengoError::Query {
-                message: format!("Table '{}' does not exist", stmt.table_name),
+        let table_schema =
+            self.context.catalog.get_table(&stmt.table_name).cloned().ok_or_else(|| {
+                RengoError::Query {
+                    message: format!("Table '{}' does not exist", stmt.table_name),
+                }
             })?;
 
         let mut affected_rows = 0;
@@ -426,13 +418,11 @@ impl QueryExecutor {
 
         let table_name = stmt.from.clone().unwrap();
 
-        let table_schema = self
-            .context
-            .catalog
-            .get_table(&table_name)
-            .cloned()
-            .ok_or_else(|| RengoError::Query {
-                message: format!("Table '{}' does not exist", table_name),
+        let table_schema =
+            self.context.catalog.get_table(&table_name).cloned().ok_or_else(|| {
+                RengoError::Query {
+                    message: format!("Table '{}' does not exist", table_name),
+                }
             })?;
 
         let has_aggregates = stmt.columns.iter().any(|item| {
@@ -444,11 +434,9 @@ impl QueryExecutor {
         });
 
         if has_aggregates || !stmt.group_by.is_empty() {
-            self.execute_select_with_aggregation(stmt, &table_schema, &table_name)
-                .await
+            self.execute_select_with_aggregation(stmt, &table_schema, &table_name).await
         } else {
-            self.execute_select_simple(stmt, &table_schema, &table_name)
-                .await
+            self.execute_select_simple(stmt, &table_schema, &table_name).await
         }
     }
 
@@ -458,9 +446,7 @@ impl QueryExecutor {
         for (idx, item) in stmt.columns.iter().enumerate() {
             match item {
                 SelectItem::Expression { expr, alias } => {
-                    let name = alias
-                        .clone()
-                        .unwrap_or_else(|| format!("col{}", idx + 1));
+                    let name = alias.clone().unwrap_or_else(|| format!("col{}", idx + 1));
                     columns.push(name);
                     row.push(self.evaluate_expression(expr)?);
                 }
@@ -545,11 +531,8 @@ impl QueryExecutor {
         let offset = stmt.offset.unwrap_or(0) as usize;
         let limit = stmt.limit.map(|l| l as usize);
 
-        let final_rows: Vec<_> = result_rows
-            .into_iter()
-            .skip(offset)
-            .take(limit.unwrap_or(usize::MAX))
-            .collect();
+        let final_rows: Vec<_> =
+            result_rows.into_iter().skip(offset).take(limit.unwrap_or(usize::MAX)).collect();
 
         let affected_rows = final_rows.len() as u64;
 
@@ -575,7 +558,7 @@ impl QueryExecutor {
             match item {
                 SelectItem::Expression { expr, alias } => {
                     select_exprs.push(expr.clone());
-                    
+
                     // Generate column name
                     let col_name = if let Some(alias) = alias {
                         alias.clone()
@@ -613,22 +596,21 @@ impl QueryExecutor {
             .collect();
 
         // Extract aggregate column indices and functions
-        let aggregate_funcs: Vec<(usize, crate::sql::aggregation::AggregateFunction)> =
-            aggregates
-                .iter()
-                .filter_map(|(_, func, arg_expr)| {
-                    if let Expression::Column(col_name) = arg_expr {
-                        table_schema
-                            .columns
-                            .iter()
-                            .position(|c| c.name == *col_name)
-                            .map(|idx| (idx, func.clone()))
-                    } else {
-                        // For COUNT(*), use column 0 as a placeholder
-                        Some((0, func.clone()))
-                    }
-                })
-                .collect();
+        let aggregate_funcs: Vec<(usize, crate::sql::aggregation::AggregateFunction)> = aggregates
+            .iter()
+            .filter_map(|(_, func, arg_expr)| {
+                if let Expression::Column(col_name) = arg_expr {
+                    table_schema
+                        .columns
+                        .iter()
+                        .position(|c| c.name == *col_name)
+                        .map(|idx| (idx, func.clone()))
+                } else {
+                    // For COUNT(*), use column 0 as a placeholder
+                    Some((0, func.clone()))
+                }
+            })
+            .collect();
 
         // Create aggregation state
         let mut agg_state = GroupAggregationState::new(group_by_indices.clone(), aggregate_funcs);
@@ -659,12 +641,12 @@ impl QueryExecutor {
         let mut result_rows = Vec::new();
         for (group_values, aggregate_values) in groups {
             let mut row = Vec::new();
-            
+
             // Add GROUP BY columns
             for val in group_values {
                 row.push(val);
             }
-            
+
             // Add aggregate values
             for val in aggregate_values {
                 row.push(val);
@@ -705,11 +687,8 @@ impl QueryExecutor {
         let offset = stmt.offset.unwrap_or(0) as usize;
         let limit = stmt.limit.map(|l| l as usize);
 
-        let final_rows: Vec<_> = result_rows
-            .into_iter()
-            .skip(offset)
-            .take(limit.unwrap_or(usize::MAX))
-            .collect();
+        let final_rows: Vec<_> =
+            result_rows.into_iter().skip(offset).take(limit.unwrap_or(usize::MAX)).collect();
 
         let affected_rows = final_rows.len() as u64;
 
@@ -723,14 +702,14 @@ impl QueryExecutor {
     /// Execute CREATE INDEX statement
     async fn execute_create_index(&mut self, stmt: CreateIndexStatement) -> Result<QueryResult> {
         // Get table schema
-        let mut table_schema =
-            self.context
-                .catalog
-                .get_table(&stmt.table_name)
-                .ok_or_else(|| RengoError::Query {
-                    message: format!("Table '{}' does not exist", stmt.table_name),
-                })?
-                .clone();
+        let mut table_schema = self
+            .context
+            .catalog
+            .get_table(&stmt.table_name)
+            .ok_or_else(|| RengoError::Query {
+                message: format!("Table '{}' does not exist", stmt.table_name),
+            })?
+            .clone();
 
         // Check if index already exists
         if table_schema.indexes.iter().any(|idx| idx.name == stmt.name) {
@@ -776,7 +755,9 @@ impl QueryExecutor {
 
         for table_name in tables {
             if let Some(mut table_schema) = self.context.catalog.get_table(&table_name).cloned() {
-                if let Some(index_pos) = table_schema.indexes.iter().position(|idx| idx.name == stmt.name) {
+                if let Some(index_pos) =
+                    table_schema.indexes.iter().position(|idx| idx.name == stmt.name)
+                {
                     table_schema.indexes.remove(index_pos);
                     self.context.catalog.add_table(table_schema);
                     found = true;
@@ -800,14 +781,14 @@ impl QueryExecutor {
 
     /// Execute ALTER TABLE statement
     async fn execute_alter_table(&mut self, stmt: AlterTableStatement) -> Result<QueryResult> {
-        let mut table_schema =
-            self.context
-                .catalog
-                .get_table(&stmt.name)
-                .ok_or_else(|| RengoError::Query {
-                    message: format!("Table '{}' does not exist", stmt.name),
-                })?
-                .clone();
+        let mut table_schema = self
+            .context
+            .catalog
+            .get_table(&stmt.name)
+            .ok_or_else(|| RengoError::Query {
+                message: format!("Table '{}' does not exist", stmt.name),
+            })?
+            .clone();
 
         match stmt.action {
             AlterTableAction::AddColumn(column_def) => {
@@ -921,13 +902,11 @@ impl QueryExecutor {
             },
             Expression::Column(col_name) => {
                 let column_index =
-                    table_schema
-                        .columns
-                        .iter()
-                        .position(|c| c.name == *col_name)
-                        .ok_or_else(|| RengoError::Query {
+                    table_schema.columns.iter().position(|c| c.name == *col_name).ok_or_else(
+                        || RengoError::Query {
                             message: format!("Column '{}' not found", col_name),
-                        })?;
+                        },
+                    )?;
 
                 if column_index < row_data.len() {
                     Ok(row_data[column_index].clone())
@@ -941,16 +920,16 @@ impl QueryExecutor {
 
                 // Simplified arithmetic operations
                 match op {
-                    BinaryOperator::Add | BinaryOperator::Subtract | BinaryOperator::Multiply
+                    BinaryOperator::Add
+                    | BinaryOperator::Subtract
+                    | BinaryOperator::Multiply
                     | BinaryOperator::Divide => {
                         // For simplicity, treat as integer operations
                         if left_val.as_ref().len() == 8 && right_val.as_ref().len() == 8 {
-                            let left_int = i64::from_le_bytes(
-                                left_val.as_ref().try_into().unwrap_or([0; 8]),
-                            );
-                            let right_int = i64::from_le_bytes(
-                                right_val.as_ref().try_into().unwrap_or([0; 8]),
-                            );
+                            let left_int =
+                                i64::from_le_bytes(left_val.as_ref().try_into().unwrap_or([0; 8]));
+                            let right_int =
+                                i64::from_le_bytes(right_val.as_ref().try_into().unwrap_or([0; 8]));
 
                             let result = match op {
                                 BinaryOperator::Add => left_int + right_int,
@@ -970,7 +949,8 @@ impl QueryExecutor {
                             Ok(Value::new(&result.to_le_bytes()))
                         } else {
                             Err(RengoError::Query {
-                                message: "Arithmetic operations require integer operands".to_string(),
+                                message: "Arithmetic operations require integer operands"
+                                    .to_string(),
                             })
                         }
                     }

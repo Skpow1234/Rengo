@@ -2,7 +2,7 @@
 
 use rengo::sql::*;
 use rengo_core::*;
-use rengo_storage::{MemoryEngine, MVCCStorage};
+use rengo_storage::{MVCCStorage, MemoryEngine};
 
 /// Helper function to create a test execution context
 async fn create_test_context() -> ExecutionContext {
@@ -10,11 +10,7 @@ async fn create_test_context() -> ExecutionContext {
     let mvcc = MVCCStorage::new();
     let catalog = SchemaCatalog::new();
 
-    ExecutionContext {
-        storage,
-        mvcc,
-        catalog,
-    }
+    ExecutionContext { storage, mvcc, catalog }
 }
 
 #[tokio::test]
@@ -108,7 +104,7 @@ async fn test_select_with_where_clause() {
     let sql = "SELECT * FROM users WHERE age > 28";
     let stmt = parser.parse(sql).unwrap();
     let result = executor.execute(stmt).await.unwrap();
-    
+
     // Should return Alice (30) and Charlie (35)
     assert_eq!(result.rows.len(), 2);
 }
@@ -181,7 +177,7 @@ async fn test_select_with_order_by() {
     let sql = "SELECT * FROM users ORDER BY age ASC";
     let stmt = parser.parse(sql).unwrap();
     let result = executor.execute(stmt).await.unwrap();
-    
+
     assert_eq!(result.rows.len(), 3);
     // Results should be ordered by age: Bob(25), Alice(30), Charlie(35)
 }
@@ -226,7 +222,7 @@ async fn test_select_distinct() {
     // Select DISTINCT
     let sql = "SELECT DISTINCT status FROM orders";
     let result = executor.execute(parser.parse(sql).unwrap()).await.unwrap();
-    
+
     // Should return only 2 distinct values: pending and completed
     assert_eq!(result.rows.len(), 2);
 }
@@ -282,7 +278,7 @@ async fn test_group_by() {
     // Group by region with aggregates
     let sql = "SELECT region, COUNT(id), SUM(amount) FROM sales GROUP BY region";
     let result = executor.execute(parser.parse(sql).unwrap()).await.unwrap();
-    
+
     // Should return 2 groups: North and South
     assert_eq!(result.rows.len(), 2);
     assert_eq!(result.columns.len(), 3);
@@ -365,7 +361,7 @@ async fn test_complex_where_conditions() {
 #[test]
 fn test_query_cache() {
     let mut cache = QueryCache::new();
-    
+
     let key1 = CacheKey::new("SELECT * FROM users", b"");
     let result1 = QueryResult {
         columns: vec!["id".to_string(), "name".to_string()],
@@ -392,7 +388,7 @@ fn test_query_cache() {
 #[test]
 fn test_prepared_statements() {
     let mut manager = PreparedStatementManager::new();
-    
+
     // Prepare statement
     let sql = "SELECT * FROM users WHERE id = $1".to_string();
     let id = manager.prepare("stmt1".to_string(), sql).unwrap();
@@ -411,7 +407,7 @@ fn test_prepared_statements() {
 #[test]
 fn test_query_optimizer() {
     let optimizer = QueryOptimizer::new();
-    
+
     let logical_plan = LogicalPlan::TableScan {
         table_name: "users".to_string(),
         projection: None,
@@ -419,7 +415,7 @@ fn test_query_optimizer() {
     };
 
     let physical_plan = optimizer.optimize(logical_plan).unwrap();
-    
+
     match physical_plan {
         PhysicalPlan::SeqScan { .. } => {
             // Expected
@@ -435,15 +431,15 @@ fn test_query_optimizer() {
 #[test]
 fn test_statistics_collector() {
     let mut collector = StatisticsCollector::new();
-    
+
     // Create table statistics
     let mut stats = TableStatistics::new("users".to_string());
     stats.set_row_count(1000);
-    
+
     let mut col_stats = ColumnStatistics::new("status".to_string());
     col_stats.set_distinct_count(5);
     stats.add_column_stats(col_stats);
-    
+
     collector.update_table_stats(stats);
 
     // Test selectivity estimation
@@ -454,4 +450,3 @@ fn test_statistics_collector() {
     let estimated_rows = collector.estimate_row_count("users", selectivity);
     assert_eq!(estimated_rows, 200); // 1000 * 0.2
 }
-

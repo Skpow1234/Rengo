@@ -1,7 +1,7 @@
 //! Integration tests for storage engines
 
 use rengo_core::{Key, Value};
-use rengo_storage::{StorageEngine, StorageEngineFactory, StorageConfig, WriteOperation};
+use rengo_storage::{StorageConfig, StorageEngine, StorageEngineFactory, WriteOperation};
 use tempfile::TempDir;
 
 #[tokio::test]
@@ -12,8 +12,10 @@ async fn test_memory_engine_integration() {
     let mut engine = StorageEngineFactory::create(
         rengo_config::StorageEngineType::Memory,
         &config,
-        temp_dir.path()
-    ).await.unwrap();
+        temp_dir.path(),
+    )
+    .await
+    .unwrap();
 
     // Test basic CRUD operations
     let test_data = generate_test_data(100);
@@ -31,7 +33,8 @@ async fn test_memory_engine_integration() {
     }
 
     // Test batch operations
-    let batch_ops: Vec<WriteOperation> = test_data.iter()
+    let batch_ops: Vec<WriteOperation> = test_data
+        .iter()
         .enumerate()
         .filter(|(i, _)| i % 2 == 0) // Delete even-indexed items
         .map(|(_, (key, _))| WriteOperation::Delete { key: key.clone() })
@@ -60,8 +63,10 @@ async fn test_storage_engine_concurrency() {
     let engine = StorageEngineFactory::create(
         rengo_config::StorageEngineType::Memory,
         &config,
-        temp_dir.path()
-    ).await.unwrap();
+        temp_dir.path(),
+    )
+    .await
+    .unwrap();
 
     // Use Arc for proper sharing across tasks
     let shared_engine = std::sync::Arc::new(engine);
@@ -101,8 +106,10 @@ async fn test_storage_engine_error_handling() {
     let mut engine = StorageEngineFactory::create(
         rengo_config::StorageEngineType::Memory,
         &config,
-        temp_dir.path()
-    ).await.unwrap();
+        temp_dir.path(),
+    )
+    .await
+    .unwrap();
 
     // Test operations on non-existent keys
     let nonexistent_key = Key::from_string("nonexistent");
@@ -126,8 +133,10 @@ async fn test_storage_engine_large_data() {
     let mut engine = StorageEngineFactory::create(
         rengo_config::StorageEngineType::Memory,
         &config,
-        temp_dir.path()
-    ).await.unwrap();
+        temp_dir.path(),
+    )
+    .await
+    .unwrap();
 
     // Test with large values
     let large_bytes = vec![42u8; 1024 * 1024]; // 1MB
@@ -166,8 +175,10 @@ async fn test_storage_engine_flush_and_compact() {
     let mut engine = StorageEngineFactory::create(
         rengo_config::StorageEngineType::Memory,
         &config,
-        temp_dir.path()
-    ).await.unwrap();
+        temp_dir.path(),
+    )
+    .await
+    .unwrap();
 
     // Insert some data
     for i in 0..100 {

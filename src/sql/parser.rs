@@ -2,7 +2,7 @@
 
 // use std::collections::HashMap; // TODO: Remove when implementing symbol table
 
-use rengo_core::{Result, RengoError};
+use rengo_core::{RengoError, Result};
 
 use crate::sql::ast::*;
 
@@ -337,10 +337,9 @@ impl SqlParser {
                     }
 
                     if is_float {
-                        let float_val: f64 =
-                            number.parse().map_err(|_| RengoError::Parse {
-                                message: "Invalid float literal".to_string(),
-                            })?;
+                        let float_val: f64 = number.parse().map_err(|_| RengoError::Parse {
+                            message: "Invalid float literal".to_string(),
+                        })?;
                         tokens.push(Token::FloatLit(float_val));
                     } else {
                         let int_val: i64 = number.parse().map_err(|_| RengoError::Parse {
@@ -913,11 +912,12 @@ impl SqlParser {
                 columns.push(SelectItem::Wildcard);
             } else {
                 let expr = self.parse_expression()?;
-                
+
                 // Check for alias
-                let alias = if matches!(self.current_token(), Token::Identifier(_)) 
+                let alias = if matches!(self.current_token(), Token::Identifier(_))
                     && self.current_token() != &Token::From
-                    && self.current_token() != &Token::Where {
+                    && self.current_token() != &Token::Where
+                {
                     Some(self.parse_identifier()?)
                 } else {
                     None
@@ -982,7 +982,7 @@ impl SqlParser {
 
             loop {
                 let expression = self.parse_expression()?;
-                
+
                 let direction = if self.current_token() == &Token::Asc {
                     self.advance();
                     OrderDirection::Asc
@@ -1398,11 +1398,7 @@ impl SqlParser {
 
         self.consume_token(Token::RightParen)?;
 
-        Ok(Expression::In {
-            expr: Box::new(expr),
-            list,
-            negated,
-        })
+        Ok(Expression::In { expr: Box::new(expr), list, negated })
     }
 
     /// Parse IS NULL expression
@@ -1416,10 +1412,7 @@ impl SqlParser {
 
         self.consume_token(Token::Null)?;
 
-        Ok(Expression::IsNull {
-            expr: Box::new(expr),
-            negated,
-        })
+        Ok(Expression::IsNull { expr: Box::new(expr), negated })
     }
 }
 

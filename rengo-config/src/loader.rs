@@ -15,11 +15,7 @@ pub struct ConfigLoader {
 impl ConfigLoader {
     pub fn new() -> Self {
         Self {
-            search_paths: vec![
-                "/etc/rengo".to_string(),
-                "~/.rengo".to_string(),
-                ".".to_string(),
-            ],
+            search_paths: vec!["/etc/rengo".to_string(), "~/.rengo".to_string(), ".".to_string()],
         }
     }
 
@@ -57,9 +53,8 @@ impl ConfigLoader {
         }
 
         // Add environment variables with RENGO_ prefix
-        builder = builder.add_source(
-            config::Environment::with_prefix("RENGO").separator("_").try_parsing(true),
-        );
+        builder = builder
+            .add_source(config::Environment::with_prefix("RENGO").separator("_").try_parsing(true));
 
         // Build configuration
         let config = builder.build().map_err(|e| rengo_core::RengoError::Config {
@@ -90,9 +85,8 @@ impl ConfigLoader {
         builder = builder.add_source(config::File::with_name(path.as_ref().to_str().unwrap()));
 
         // Add environment variables
-        builder = builder.add_source(
-            config::Environment::with_prefix("RENGO").separator("_").try_parsing(true),
-        );
+        builder = builder
+            .add_source(config::Environment::with_prefix("RENGO").separator("_").try_parsing(true));
 
         let config = builder.build().map_err(|e| rengo_core::RengoError::Config {
             message: format!("Failed to build configuration: {}", e),
@@ -109,29 +103,23 @@ impl ConfigLoader {
     }
 
     /// Save current configuration to a file
-    pub async fn save_to_file<P: AsRef<Path>>(
-        &self,
-        config: &RengoConfig,
-        path: P,
-    ) -> Result<()> {
-        let toml_string = toml::to_string_pretty(config).map_err(|e| {
-            rengo_core::RengoError::Config {
+    pub async fn save_to_file<P: AsRef<Path>>(&self, config: &RengoConfig, path: P) -> Result<()> {
+        let toml_string =
+            toml::to_string_pretty(config).map_err(|e| rengo_core::RengoError::Config {
                 message: format!("Failed to serialize configuration: {}", e),
-            }
-        })?;
+            })?;
 
-        tokio::fs::write(path, toml_string).await.map_err(|e| {
-            rengo_core::RengoError::Config {
+        tokio::fs::write(path, toml_string)
+            .await
+            .map_err(|e| rengo_core::RengoError::Config {
                 message: format!("Failed to write configuration file: {}", e),
-            }
-        })?;
+            })?;
 
         Ok(())
     }
 
     fn default_config(&self) -> String {
-        toml::to_string_pretty(&RengoConfig::default())
-            .expect("Failed to serialize default config")
+        toml::to_string_pretty(&RengoConfig::default()).expect("Failed to serialize default config")
     }
 
     fn find_config_file(&self, filename: &str) -> Option<std::path::PathBuf> {

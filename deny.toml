@@ -1,26 +1,27 @@
 # Cargo-deny configuration for Rengo
 # This file configures cargo-deny to check for security vulnerabilities,
 # license compatibility, and other issues in dependencies.
+# Schema: cargo-deny 0.16+ / cargo-deny-action v2
 
 [advisories]
-# Check for security advisories
-vulnerability = "deny"
-unmaintained = "warn"
-# Transitive unsound advisories (anyhow/rand) tracked; do not soft-fail vulns
-unsound = "warn"
-notice = "warn"
+# Lint levels (vulnerability/notice) were removed; advisories deny by default.
+# Scope which crates can fail on unmaintained/unsound (warn-level no longer exists).
+unmaintained = "workspace"
+# Transitive unsound advisories (anyhow/rand) tracked via ignore below
+unsound = "workspace"
+yanked = "warn"
 
 # Ignore specific advisories if needed
 ignore = [
     # Tracked: bump when crates publish fixes we can take without breaking APIs
     "RUSTSEC-2026-0190", # anyhow Error::downcast_mut unsound
     "RUSTSEC-2026-0097", # rand custom logger unsound
+    # bincode 1.3.3 is considered complete; team ceased development (unmaintained)
+    { id = "RUSTSEC-2025-0141", reason = "bincode 1.3.3 is complete; no API-compatible replacement yet" },
 ]
 
 [licenses]
-# License compatibility check
-default = "deny"
-copyleft = "deny"
+# Licenses not in this list are denied by default
 allow = [
     "MIT",
     "Apache-2.0",
@@ -29,25 +30,19 @@ allow = [
     "BSD-3-Clause",
     "ISC",
     "Unicode-DFS-2016",
+    "Unicode-3.0",
     "Zlib",
     "0BSD",
     "CC0-1.0",
     "MPL-2.0",
 ]
-deny = [
-    "GPL-2.0",
-    "GPL-3.0",
-    "AGPL-3.0",
-    "LGPL-2.0",
-    "LGPL-2.1",
-    "LGPL-3.0",
-]
-allow-osi-fsf-free = "neither"
 
 [bans]
 # Check for duplicate dependencies
 multiple-versions = "warn"
 wildcards = "deny"
+# Workspace path deps omit versions; allow those without treating as wildcards
+allow-wildcard-paths = true
 highlight = "all"
 
 [sources]
@@ -56,7 +51,3 @@ unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 allow-git = []
-
-[workspace]
-# Workspace configuration
-exclude = []

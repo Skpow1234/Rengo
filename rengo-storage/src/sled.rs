@@ -112,8 +112,8 @@ impl StorageEngine for SledEngine {
     async fn scan_prefix(&self, prefix: &[u8]) -> Result<Vec<(Key, Value)>> {
         let mut results = Vec::new();
         for item in self.db.scan_prefix(prefix) {
-            let (key, value) = item
-                .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
+            let (key, value) =
+                item.map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
             results.push((Key::new(&key), Value::new(&value)));
         }
         Ok(results)

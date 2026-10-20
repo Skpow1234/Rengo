@@ -4,10 +4,10 @@ use std::path::Path;
 
 use async_trait::async_trait;
 #[cfg(feature = "rocksdb")]
-use rocksdb::{Options, WriteBatch, DB};
-#[cfg(feature = "rocksdb")]
 use rengo_config::CompressionType;
 use rengo_core::{Key, Result, Value};
+#[cfg(feature = "rocksdb")]
+use rocksdb::{Options, WriteBatch, DB};
 
 use super::{StorageConfig, StorageEngine, StorageStats, WriteOperation};
 
@@ -139,8 +139,8 @@ impl StorageEngine for RocksDBEngine {
         let mut results = Vec::new();
         let iter = self.db.prefix_iterator(prefix);
         for item in iter {
-            let (key, value) = item
-                .map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
+            let (key, value) =
+                item.map_err(|e| rengo_core::RengoError::Storage { source: Box::new(e) })?;
             if !key.starts_with(prefix) {
                 break;
             }

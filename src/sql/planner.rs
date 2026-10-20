@@ -1,6 +1,6 @@
 //! Query planning and optimization
 
-use rengo_core::{Result, RengoError};
+use rengo_core::{RengoError, Result};
 
 use crate::sql::ast::*;
 use crate::sql::executor::SchemaCatalog;
@@ -200,10 +200,7 @@ impl QueryOptimizer {
 
     /// Create a query optimizer with custom statistics
     pub fn with_statistics(statistics: StatisticsCollector) -> Self {
-        Self {
-            statistics,
-            cost_model: CostModel::new(),
-        }
+        Self { statistics, cost_model: CostModel::new() }
     }
 
     /// Get a reference to the statistics collector
@@ -259,38 +256,23 @@ impl QueryOptimizer {
             };
 
             // Estimate costs for different access methods
-            let seq_scan_cost = self.cost_model.estimate_seq_scan_cost(
-                table_stats.row_count,
-                table_stats.avg_row_size,
-            );
+            let seq_scan_cost = self
+                .cost_model
+                .estimate_seq_scan_cost(table_stats.row_count, table_stats.avg_row_size);
 
-            let index_scan_cost = self.cost_model.estimate_index_scan_cost(
-                selectivity,
-                table_stats.row_count,
-            );
+            let index_scan_cost =
+                self.cost_model.estimate_index_scan_cost(selectivity, table_stats.row_count);
 
             // Choose the cheaper option (simplified - assumes an index exists)
             if selectivity < 0.2 && index_scan_cost < seq_scan_cost {
                 // TODO: Implement actual index selection
-                Ok(PhysicalPlan::SeqScan {
-                    table_name,
-                    projection,
-                    filter,
-                })
+                Ok(PhysicalPlan::SeqScan { table_name, projection, filter })
             } else {
-                Ok(PhysicalPlan::SeqScan {
-                    table_name,
-                    projection,
-                    filter,
-                })
+                Ok(PhysicalPlan::SeqScan { table_name, projection, filter })
             }
         } else {
             // No statistics available, default to sequential scan
-            Ok(PhysicalPlan::SeqScan {
-                table_name,
-                projection,
-                filter,
-            })
+            Ok(PhysicalPlan::SeqScan { table_name, projection, filter })
         }
     }
 
@@ -298,7 +280,9 @@ impl QueryOptimizer {
     fn estimate_filter_selectivity(&self, table_name: &str, filter: &Expression) -> f64 {
         match filter {
             Expression::BinaryOp { left, op, right } => {
-                if let (Expression::Column(col_name), Expression::Literal(_)) = (left.as_ref(), right.as_ref()) {
+                if let (Expression::Column(col_name), Expression::Literal(_)) =
+                    (left.as_ref(), right.as_ref())
+                {
                     let operator = match op {
                         BinaryOperator::Equal => "=",
                         BinaryOperator::NotEqual => "!=",
@@ -308,7 +292,7 @@ impl QueryOptimizer {
                         BinaryOperator::GreaterThanOrEqual => ">=",
                         _ => "=",
                     };
-                    
+
                     self.statistics.estimate_selectivity(table_name, col_name, operator, b"")
                 } else if matches!(op, BinaryOperator::And) {
                     // For AND, multiply selectivities
@@ -333,11 +317,10 @@ impl QueryOptimizer {
         match plan {
             PhysicalPlan::SeqScan { table_name, filter, .. } => {
                 if let Some(table_stats) = self.statistics.get_table_stats(table_name) {
-                    let cpu_cost = self.cost_model.estimate_seq_scan_cost(
-                        table_stats.row_count,
-                        table_stats.avg_row_size,
-                    );
-                    
+                    let cpu_cost = self
+                        .cost_model
+                        .estimate_seq_scan_cost(table_stats.row_count, table_stats.avg_row_size);
+
                     let selectivity = if let Some(filter_expr) = filter {
                         self.estimate_filter_selectivity(table_name, filter_expr)
                     } else {
@@ -361,7 +344,8 @@ impl QueryOptimizer {
             }
             PhysicalPlan::IndexScan { table_name, .. } => {
                 if let Some(table_stats) = self.statistics.get_table_stats(table_name) {
-                    let cpu_cost = self.cost_model.estimate_index_scan_cost(0.1, table_stats.row_count);
+                    let cpu_cost =
+                        self.cost_model.estimate_index_scan_cost(0.1, table_stats.row_count);
                     Cost {
                         cpu_cost,
                         io_cost: cpu_cost * 0.3,

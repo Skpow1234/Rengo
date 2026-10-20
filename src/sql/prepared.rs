@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use rengo_core::{Result, RengoError};
+use rengo_core::{RengoError, Result};
 
 use crate::sql::ast::*;
 use crate::sql::parser::SqlParser;
@@ -103,10 +103,8 @@ impl PreparedStatementManager {
         id: &PreparedStatementId,
         parameters: Vec<Literal>,
     ) -> Result<Statement> {
-        let prepared = self.statements.get_mut(id).ok_or_else(|| {
-            RengoError::Query {
-                message: format!("Prepared statement '{}' not found", id),
-            }
+        let prepared = self.statements.get_mut(id).ok_or_else(|| RengoError::Query {
+            message: format!("Prepared statement '{}' not found", id),
         })?;
 
         // Validate parameter count
@@ -155,11 +153,7 @@ impl PreparedStatementManager {
             if c == '$' {
                 if let Some(next_char) = sql.chars().nth(i + 1) {
                     if next_char.is_ascii_digit() {
-                        parameters.push(ParameterInfo {
-                            index,
-                            name: None,
-                            data_type: None,
-                        });
+                        parameters.push(ParameterInfo { index, name: None, data_type: None });
                         index += 1;
                     }
                 }
@@ -173,7 +167,7 @@ impl PreparedStatementManager {
     fn replace_parameters(statement: &mut Statement, parameters: &[Literal]) -> Result<()> {
         // This is a simplified implementation
         // In a real implementation, we would traverse the AST and replace parameter nodes
-        
+
         match statement {
             Statement::Insert(ref mut insert) => {
                 for row in &mut insert.values {
@@ -207,7 +201,10 @@ impl PreparedStatementManager {
     }
 
     /// Replace parameters in an expression (simplified)
-    fn replace_expression_parameters(_expr: &mut Expression, _parameters: &[Literal]) -> Result<()> {
+    fn replace_expression_parameters(
+        _expr: &mut Expression,
+        _parameters: &[Literal],
+    ) -> Result<()> {
         // This would need to traverse the expression tree and replace parameter nodes
         // For now, this is a placeholder
         Ok(())
@@ -227,10 +224,10 @@ mod tests {
     #[test]
     fn test_prepare_statement() {
         let mut manager = PreparedStatementManager::new();
-        
+
         let sql = "SELECT * FROM users WHERE id = $1".to_string();
         let result = manager.prepare("stmt1".to_string(), sql);
-        
+
         assert!(result.is_ok());
         assert!(manager.get(&"stmt1".to_string()).is_some());
     }
@@ -239,7 +236,7 @@ mod tests {
     fn test_parameter_extraction() {
         let sql = "SELECT * FROM users WHERE id = $1 AND name = $2";
         let params = PreparedStatementManager::extract_parameters(sql);
-        
+
         assert_eq!(params.len(), 2);
         assert_eq!(params[0].index, 1);
         assert_eq!(params[1].index, 2);
@@ -248,14 +245,13 @@ mod tests {
     #[test]
     fn test_deallocate() {
         let mut manager = PreparedStatementManager::new();
-        
+
         let sql = "SELECT * FROM users".to_string();
         manager.prepare("stmt1".to_string(), sql).unwrap();
-        
+
         assert!(manager.get(&"stmt1".to_string()).is_some());
-        
+
         manager.deallocate(&"stmt1".to_string()).unwrap();
         assert!(manager.get(&"stmt1".to_string()).is_none());
     }
 }
-

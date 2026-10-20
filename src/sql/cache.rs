@@ -1,8 +1,8 @@
 //! Query result caching
 
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
 use std::time::{Duration, SystemTime};
 
 use rengo_core::Result;
@@ -29,10 +29,7 @@ impl CacheKey {
         params.hash(&mut hasher);
         let params_hash = hasher.finish();
 
-        Self {
-            query_hash,
-            params_hash,
-        }
+        Self { query_hash, params_hash }
     }
 }
 
@@ -69,7 +66,7 @@ impl Default for CacheConfig {
         Self {
             max_entries: 1000,
             max_size_bytes: 100 * 1024 * 1024, // 100 MB
-            ttl: Duration::from_secs(300),      // 5 minutes
+            ttl: Duration::from_secs(300),     // 5 minutes
             enable_lru: true,
         }
     }
@@ -299,7 +296,7 @@ mod tests {
     #[test]
     fn test_cache_basic_operations() {
         let mut cache = QueryCache::new();
-        
+
         let key = CacheKey::new("SELECT * FROM users", b"");
         let result = QueryResult {
             columns: vec!["id".to_string(), "name".to_string()],
@@ -320,10 +317,10 @@ mod tests {
     #[test]
     fn test_cache_miss() {
         let mut cache = QueryCache::new();
-        
+
         let key = CacheKey::new("SELECT * FROM users", b"");
         let result = cache.get(&key);
-        
+
         assert!(result.is_none());
         assert_eq!(cache.statistics().misses, 1);
     }
@@ -357,7 +354,7 @@ mod tests {
     #[test]
     fn test_hit_rate() {
         let mut cache = QueryCache::new();
-        
+
         let key = CacheKey::new("SELECT * FROM users", b"");
         let result = QueryResult {
             columns: vec!["id".to_string()],
@@ -366,11 +363,11 @@ mod tests {
         };
 
         cache.put(key.clone(), result).unwrap();
-        
+
         // 2 hits
         cache.get(&key);
         cache.get(&key);
-        
+
         // 1 miss
         let other_key = CacheKey::new("SELECT * FROM orders", b"");
         cache.get(&other_key);
@@ -379,4 +376,3 @@ mod tests {
         assert!((cache.hit_rate() - 0.666).abs() < 0.01);
     }
 }
-

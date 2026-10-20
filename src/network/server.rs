@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use rengo_core::{Result, RengoError};
+use rengo_core::{RengoError, Result};
 use tokio::sync::RwLock;
 use tonic::{Request, Response, Status};
 
@@ -110,10 +110,7 @@ impl proto::DatabaseService for DatabaseServiceImpl {
             }
         }
 
-        Ok(Response::new(proto::QueryResponse {
-            has_more: false,
-            cursor: "".to_string(),
-        }))
+        Ok(Response::new(proto::QueryResponse { has_more: false, cursor: "".to_string() }))
     }
 
     async fn begin_transaction(

@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-use rengo_core::{Key, Result, RengoError};
+use rengo_core::{Key, RengoError, Result};
 use tokio::sync::RwLock;
 
 /// Index trait for different index types

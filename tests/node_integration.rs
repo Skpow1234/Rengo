@@ -22,10 +22,7 @@ async fn test_database_node_ddl_dml() {
         .await
         .expect("insert");
 
-    let result = node
-        .execute_sql("SELECT id, name FROM items")
-        .await
-        .expect("select");
+    let result = node.execute_sql("SELECT id, name FROM items").await.expect("select");
 
     assert_eq!(result.rows.len(), 1);
     assert_eq!(result.columns.len(), 2);
@@ -43,9 +40,7 @@ async fn test_catalog_survives_reopen_with_memory_is_empty() {
     config.storage.engine = StorageEngineType::Memory;
 
     let node = DatabaseNode::from_config(config.clone()).await.unwrap();
-    node.execute_sql("CREATE TABLE t (id INTEGER)")
-        .await
-        .unwrap();
+    node.execute_sql("CREATE TABLE t (id INTEGER)").await.unwrap();
     assert_eq!(node.status().await.table_count, 1);
 
     let node2 = DatabaseNode::from_config(config).await.unwrap();
@@ -60,15 +55,11 @@ async fn test_session_transactions() {
     config.storage.engine = StorageEngineType::Memory;
 
     let node = DatabaseNode::from_config(config).await.unwrap();
-    node.execute_sql("CREATE TABLE acct (id INTEGER, bal INTEGER)")
-        .await
-        .unwrap();
+    node.execute_sql("CREATE TABLE acct (id INTEGER, bal INTEGER)").await.unwrap();
 
     node.execute_sql("BEGIN").await.unwrap();
     assert!(node.status().await.in_transaction);
-    node.execute_sql("INSERT INTO acct (id, bal) VALUES (1, 100)")
-        .await
-        .unwrap();
+    node.execute_sql("INSERT INTO acct (id, bal) VALUES (1, 100)").await.unwrap();
     node.execute_sql("COMMIT").await.unwrap();
     assert!(!node.status().await.in_transaction);
 
@@ -88,9 +79,7 @@ async fn test_sled_catalog_and_data_survive_restart() {
     config.node.bind_address = "127.0.0.1:0".to_string();
 
     {
-        let node = DatabaseNode::from_config(config.clone())
-            .await
-            .expect("open sled node");
+        let node = DatabaseNode::from_config(config.clone()).await.expect("open sled node");
         assert_eq!(node.status().await.storage_engine, "sled");
 
         node.execute_sql("CREATE TABLE users (id INTEGER NOT NULL, name VARCHAR(64))")
@@ -109,9 +98,7 @@ async fn test_sled_catalog_and_data_survive_restart() {
     }
 
     // Re-open same data directory
-    let node2 = DatabaseNode::from_config(config)
-        .await
-        .expect("reopen sled node");
+    let node2 = DatabaseNode::from_config(config).await.expect("reopen sled node");
     assert_eq!(node2.status().await.table_count, 1);
 
     let result = node2

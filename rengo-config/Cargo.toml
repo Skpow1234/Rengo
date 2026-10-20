@@ -21,7 +21,7 @@ async-trait.workspace = true
 tracing.workspace = true
 
 # Local dependencies
-rengo-core = { path = "../rengo-core" }
+rengo-core = { version = "0.1.0", path = "../rengo-core" }
 
 [dev-dependencies]
 tempfile = "3.0"

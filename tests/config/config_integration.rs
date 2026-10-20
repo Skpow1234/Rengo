@@ -91,7 +91,8 @@ async fn test_config_loader_tilde_expansion() {
     if let Some(home) = env::var_os("HOME") {
         let home_str = home.to_string_lossy();
 
-        let config_content = format!(r#"
+        let config_content = format!(
+            r#"
             [network]
             certificate_path = "~/certs/cert.pem"
             private_key_path = "~/certs/key.pem"
@@ -99,7 +100,8 @@ async fn test_config_loader_tilde_expansion() {
 
             [logging]
             file_path = "~/logs/rengo.log"
-        "#);
+        "#
+        );
 
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("tilde.toml");

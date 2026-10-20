@@ -109,23 +109,18 @@ impl StorageEngineFactory {
                 Ok(Box::new(engine))
             }
             #[cfg(not(feature = "rocksdb"))]
-            rengo_config::StorageEngineType::RocksDB => {
-                Err(rengo_core::RengoError::Config {
-                    message: "RocksDB feature not enabled. Enable with --features rocksdb"
-                        .to_string(),
-                })
-            }
+            rengo_config::StorageEngineType::RocksDB => Err(rengo_core::RengoError::Config {
+                message: "RocksDB feature not enabled. Enable with --features rocksdb".to_string(),
+            }),
             #[cfg(feature = "sled")]
             rengo_config::StorageEngineType::Sled => {
                 let engine = crate::sled::SledEngine::new(config, data_path).await?;
                 Ok(Box::new(engine))
             }
             #[cfg(not(feature = "sled"))]
-            rengo_config::StorageEngineType::Sled => {
-                Err(rengo_core::RengoError::Config {
-                    message: "Sled feature not enabled. Enable with --features sled".to_string(),
-                })
-            }
+            rengo_config::StorageEngineType::Sled => Err(rengo_core::RengoError::Config {
+                message: "Sled feature not enabled. Enable with --features sled".to_string(),
+            }),
             rengo_config::StorageEngineType::Memory => {
                 let engine = crate::memory::MemoryEngine::new(config).await?;
                 Ok(Box::new(engine))

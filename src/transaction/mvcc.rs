@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use rengo_core::{Result, RengoError, Timestamp, TransactionId};
+use rengo_core::{RengoError, Result, Timestamp, TransactionId};
 
 /// MVCC transaction context
 pub struct MVCCTransactionContext {

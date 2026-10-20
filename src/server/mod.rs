@@ -5,10 +5,10 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
 use rengo_config::{RengoConfig, StorageEngineType};
-use rengo_core::{Result, RengoError, TransactionId};
+use rengo_core::{RengoError, Result, TransactionId};
 use rengo_storage::{MVCCStorage, StorageConfig, StorageEngine, StorageEngineFactory};
+use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{Mutex, RwLock};
@@ -70,11 +70,13 @@ impl DatabaseNode {
     /// Open storage and build a node from configuration
     pub async fn from_config(config: RengoConfig) -> Result<Self> {
         let data_dir = config.cluster.data_directory.clone();
-        std::fs::create_dir_all(&data_dir).map_err(|e| RengoError::internal(format!(
-            "Failed to create data directory {}: {}",
-            data_dir.display(),
-            e
-        )))?;
+        std::fs::create_dir_all(&data_dir).map_err(|e| {
+            RengoError::internal(format!(
+                "Failed to create data directory {}: {}",
+                data_dir.display(),
+                e
+            ))
+        })?;
 
         let storage_config = StorageConfig {
             block_cache_size_mb: config.storage.block_cache_size_mb,
@@ -133,14 +135,8 @@ impl DatabaseNode {
 
     /// Execute a single SQL statement (parse → session/auto txn → execute)
     pub async fn execute_sql(&self, sql: &str) -> Result<QueryResult> {
-        execute_sql_inner(
-            &self.executor,
-            &self.tx_manager,
-            &self.active_tx,
-            &self.table_count,
-            sql,
-        )
-        .await
+        execute_sql_inner(&self.executor, &self.tx_manager, &self.active_tx, &self.table_count, sql)
+            .await
     }
 
     /// Current node status snapshot
@@ -157,18 +153,17 @@ impl DatabaseNode {
 
     /// Bind TCP listener and serve newline-delimited JSON SQL requests until shutdown
     pub async fn start(&self) -> Result<()> {
-        let addr: SocketAddr =
-            self.bind_address.parse().map_err(|e| RengoError::Config {
-                message: format!("Invalid bind address '{}': {}", self.bind_address, e),
-            })?;
-
-        let listener = TcpListener::bind(addr).await.map_err(|e| {
-            RengoError::internal(format!("Failed to bind {}: {}", addr, e))
+        let addr: SocketAddr = self.bind_address.parse().map_err(|e| RengoError::Config {
+            message: format!("Invalid bind address '{}': {}", self.bind_address, e),
         })?;
 
-        let local = listener.local_addr().map_err(|e| {
-            RengoError::internal(format!("Failed to read local address: {}", e))
-        })?;
+        let listener = TcpListener::bind(addr)
+            .await
+            .map_err(|e| RengoError::internal(format!("Failed to bind {}: {}", addr, e)))?;
+
+        let local = listener
+            .local_addr()
+            .map_err(|e| RengoError::internal(format!("Failed to read local address: {}", e)))?;
 
         self.running.store(true, Ordering::SeqCst);
         println!("Rengo node listening on {}", local);
@@ -235,19 +230,15 @@ impl DatabaseNode {
             return Ok(());
         };
 
-        let names: Vec<String> = serde_json::from_slice(list_value.as_slice()).map_err(|e| {
-            RengoError::internal(format!("Corrupt catalog list: {}", e))
-        })?;
+        let names: Vec<String> = serde_json::from_slice(list_value.as_slice())
+            .map_err(|e| RengoError::internal(format!("Corrupt catalog list: {}", e)))?;
 
         for name in names {
             let key = rengo_core::Key::from_string(&format!("{}{}", CATALOG_TABLE_PREFIX, name));
             if let Some(raw) = storage.get(&key).await? {
                 let schema: crate::sql::TableSchema = serde_json::from_slice(raw.as_slice())
                     .map_err(|e| {
-                        RengoError::internal(format!(
-                            "Corrupt catalog entry for '{}': {}",
-                            name, e
-                        ))
+                        RengoError::internal(format!("Corrupt catalog entry for '{}': {}", name, e))
                     })?;
                 catalog.add_table(schema);
             }
@@ -267,14 +258,8 @@ struct DatabaseNodeHandle {
 
 impl DatabaseNodeHandle {
     async fn execute_sql(&self, sql: &str) -> Result<QueryResult> {
-        execute_sql_inner(
-            &self.executor,
-            &self.tx_manager,
-            &self.active_tx,
-            &self.table_count,
-            sql,
-        )
-        .await
+        execute_sql_inner(&self.executor, &self.tx_manager, &self.active_tx, &self.table_count, sql)
+            .await
     }
 }
 
@@ -296,9 +281,7 @@ async fn execute_sql_inner(
                     message: "Transaction already in progress".to_string(),
                 });
             }
-            let tx_id = tx_manager
-                .begin_transaction(TransactionConfig::default())
-                .await?;
+            let tx_id = tx_manager.begin_transaction(TransactionConfig::default()).await?;
             *guard = Some(tx_id);
             return Ok(QueryResult {
                 columns: vec![],
@@ -341,12 +324,7 @@ async fn execute_sql_inner(
     let (tx_id, auto_commit) = if let Some(tx_id) = session_tx {
         (tx_id, false)
     } else {
-        (
-            tx_manager
-                .begin_transaction(TransactionConfig::default())
-                .await?,
-            true,
-        )
+        (tx_manager.begin_transaction(TransactionConfig::default()).await?, true)
     };
 
     let result = {
@@ -381,9 +359,11 @@ async fn handle_client(stream: TcpStream, node: Arc<DatabaseNodeHandle>) -> Resu
     let (reader, mut writer) = stream.into_split();
     let mut lines = BufReader::new(reader).lines();
 
-    while let Some(line) = lines.next_line().await.map_err(|e| {
-        RengoError::internal(format!("Read error: {}", e))
-    })? {
+    while let Some(line) = lines
+        .next_line()
+        .await
+        .map_err(|e| RengoError::internal(format!("Read error: {}", e)))?
+    {
         let line = line.trim().to_string();
         if line.is_empty() {
             continue;
@@ -423,13 +403,13 @@ async fn handle_client(stream: TcpStream, node: Arc<DatabaseNodeHandle>) -> Resu
             },
         };
 
-        let mut out = serde_json::to_string(&response).map_err(|e| {
-            RengoError::internal(format!("Serialize response: {}", e))
-        })?;
+        let mut out = serde_json::to_string(&response)
+            .map_err(|e| RengoError::internal(format!("Serialize response: {}", e)))?;
         out.push('\n');
-        writer.write_all(out.as_bytes()).await.map_err(|e| {
-            RengoError::internal(format!("Write error: {}", e))
-        })?;
+        writer
+            .write_all(out.as_bytes())
+            .await
+            .map_err(|e| RengoError::internal(format!("Write error: {}", e)))?;
     }
 
     Ok(())

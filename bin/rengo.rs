@@ -94,10 +94,7 @@ async fn handle_init(data_dir: &str, single_node: bool) -> Result<()> {
     println!("Single node: {}", single_node);
 
     std::fs::create_dir_all(data_dir).map_err(|e| {
-        rengo::core::RengoError::internal(format!(
-            "Failed to create data directory: {}",
-            e
-        ))
+        rengo::core::RengoError::internal(format!("Failed to create data directory: {}", e))
     })?;
 
     let config_path = std::path::Path::new("rengo.toml");
@@ -144,10 +141,7 @@ service_name = "rengo"
         );
 
         std::fs::write(config_path, default_config.trim_start()).map_err(|e| {
-            rengo::core::RengoError::internal(format!(
-                "Failed to create config file: {}",
-                e
-            ))
+            rengo::core::RengoError::internal(format!("Failed to create config file: {}", e))
         })?;
         println!("Created default configuration at: {}", config_path.display());
     }
@@ -230,10 +224,8 @@ async fn handle_sql(query: Option<&str>, database: &str, config_path: &str) -> R
         println!("{}", result.columns.join(" | "));
         println!("{}", "-".repeat(result.columns.join(" | ").len().max(8)));
         for row in &result.rows {
-            let cells: Vec<String> = row
-                .iter()
-                .map(|v| String::from_utf8_lossy(v.as_slice()).into_owned())
-                .collect();
+            let cells: Vec<String> =
+                row.iter().map(|v| String::from_utf8_lossy(v.as_slice()).into_owned()).collect();
             println!("{}", cells.join(" | "));
         }
     }

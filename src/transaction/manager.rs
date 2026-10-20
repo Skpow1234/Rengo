@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use rengo_core::{Result, RengoError, Timestamp, TransactionId};
+use rengo_core::{RengoError, Result, Timestamp, TransactionId};
 use rengo_storage::MVCCStorage;
 use tokio::sync::{Mutex, RwLock};
 
@@ -216,9 +216,7 @@ impl LockManager {
                 lock_info.waiters.retain(|&id| id != transaction_id);
                 wait_for.get_mut(&transaction_id).unwrap().remove(&lock_info.holder);
 
-                return Err(RengoError::Transaction {
-                    message: "Deadlock detected".to_string(),
-                });
+                return Err(RengoError::Transaction { message: "Deadlock detected".to_string() });
             }
 
             // Wait for lock (in real implementation, this would be a proper wait/notify mechanism)
@@ -389,11 +387,12 @@ impl TransactionManager {
     pub async fn commit_transaction(&self, transaction_id: TransactionId) -> Result<()> {
         let transaction_arc = {
             let transactions = self.transactions.read().await;
-            transactions.get(&transaction_id).cloned().ok_or_else(|| {
-                RengoError::Transaction {
+            transactions
+                .get(&transaction_id)
+                .cloned()
+                .ok_or_else(|| RengoError::Transaction {
                     message: format!("Transaction {:?} not found", transaction_id),
-                }
-            })?
+                })?
         };
 
         let mut transaction = transaction_arc.lock().await;
@@ -452,11 +451,12 @@ impl TransactionManager {
     pub async fn rollback_transaction(&self, transaction_id: TransactionId) -> Result<()> {
         let transaction_arc = {
             let transactions = self.transactions.read().await;
-            transactions.get(&transaction_id).cloned().ok_or_else(|| {
-                RengoError::Transaction {
+            transactions
+                .get(&transaction_id)
+                .cloned()
+                .ok_or_else(|| RengoError::Transaction {
                     message: format!("Transaction {:?} not found", transaction_id),
-                }
-            })?
+                })?
         };
 
         let mut transaction = transaction_arc.lock().await;

@@ -2,7 +2,7 @@
 
 // use std::time::Duration; // TODO: Remove when implementing timeout functionality
 
-use rengo_core::{NodeId, Result, RengoError};
+use rengo_core::{NodeId, RengoError, Result};
 use tonic::transport::Channel;
 
 use crate::network::protocol::proto;
@@ -61,12 +61,9 @@ impl DatabaseClient {
         };
 
         let response =
-            self.client
-                .begin_transaction(request)
-                .await
-                .map_err(|e| RengoError::Network {
-                    message: format!("Transaction begin failed: {}", e),
-                })?;
+            self.client.begin_transaction(request).await.map_err(|e| RengoError::Network {
+                message: format!("Transaction begin failed: {}", e),
+            })?;
 
         Ok(response.into_inner())
     }
@@ -79,11 +76,10 @@ impl DatabaseClient {
     ) -> Result<proto::CommitResponse> {
         let request = proto::CommitRequest { transaction_id };
 
-        let response = self.client.commit_transaction(request).await.map_err(|e| {
-            RengoError::Network {
+        let response =
+            self.client.commit_transaction(request).await.map_err(|e| RengoError::Network {
                 message: format!("Transaction commit failed: {}", e),
-            }
-        })?;
+            })?;
 
         Ok(response.into_inner())
     }
@@ -96,11 +92,13 @@ impl DatabaseClient {
     ) -> Result<proto::RollbackResponse> {
         let request = proto::RollbackRequest { transaction_id };
 
-        let response = self.client.rollback_transaction(request).await.map_err(|e| {
-            RengoError::Network {
-                message: format!("Transaction rollback failed: {}", e),
-            }
-        })?;
+        let response =
+            self.client
+                .rollback_transaction(request)
+                .await
+                .map_err(|e| RengoError::Network {
+                    message: format!("Transaction rollback failed: {}", e),
+                })?;
 
         Ok(response.into_inner())
     }
@@ -112,11 +110,10 @@ impl DatabaseClient {
     ) -> Result<proto::StatusResponse> {
         let request = proto::StatusRequest { include_metrics };
 
-        let response = self.client.get_cluster_status(request).await.map_err(|e| {
-            RengoError::Network {
+        let response =
+            self.client.get_cluster_status(request).await.map_err(|e| RengoError::Network {
                 message: format!("Cluster status request failed: {}", e),
-            }
-        })?;
+            })?;
 
         Ok(response.into_inner())
     }
@@ -130,10 +127,9 @@ impl DatabaseClient {
     ) -> Result<proto::HeartbeatResponse> {
         let request = proto::HeartbeatRequest { node_id, status };
 
-        let response =
-            self.client.heartbeat(request).await.map_err(|e| RengoError::Network {
-                message: format!("Heartbeat failed: {}", e),
-            })?;
+        let response = self.client.heartbeat(request).await.map_err(|e| RengoError::Network {
+            message: format!("Heartbeat failed: {}", e),
+        })?;
 
         Ok(response.into_inner())
     }
@@ -145,11 +141,13 @@ impl DatabaseClient {
     ) -> Result<proto::TopologyResponse> {
         let request = proto::TopologyRequest { include_stats };
 
-        let response = self.client.get_cluster_topology(request).await.map_err(|e| {
-            RengoError::Network {
-                message: format!("Topology request failed: {}", e),
-            }
-        })?;
+        let response =
+            self.client
+                .get_cluster_topology(request)
+                .await
+                .map_err(|e| RengoError::Network {
+                    message: format!("Topology request failed: {}", e),
+                })?;
 
         Ok(response.into_inner())
     }

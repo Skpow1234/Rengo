@@ -16,8 +16,8 @@ tokio.workspace = true
 tracing.workspace = true
 
 # Local dependencies
-rengo-core = { path = "../rengo-core" }
-rengo-config = { path = "../rengo-config" }
+rengo-core = { version = "0.1.0", path = "../rengo-core" }
+rengo-config = { version = "0.1.0", path = "../rengo-config" }
 
 # Storage engines
 rocksdb = { version = "0.22", optional = true }

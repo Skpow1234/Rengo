@@ -88,4 +88,3 @@ pub enum RaftError {
 }
 
 pub type Result<T> = std::result::Result<T, RaftError>;
-

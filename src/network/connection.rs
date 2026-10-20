@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use rengo_core::{NodeId, Result, RengoError};
+use rengo_core::{NodeId, RengoError, Result};
 use tokio::sync::RwLock;
 use tonic::transport::{Channel, Endpoint};
 

@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use rengo_core::{Key, Result, RengoError, Timestamp, TransactionId, Value};
+use rengo_core::{Key, RengoError, Result, Timestamp, TransactionId, Value};
 use tokio::sync::RwLock;
 
 /// Version of a value in MVCC

@@ -51,9 +51,9 @@ grpc-enabled = []
 
 [dependencies]
 # Workspace crates
-rengo-core = { path = "rengo-core" }
-rengo-config = { path = "rengo-config" }
-rengo-storage = { path = "rengo-storage", default-features = false }
+rengo-core = { version = "0.1.0", path = "rengo-core" }
+rengo-config = { version = "0.1.0", path = "rengo-config" }
+rengo-storage = { version = "0.1.0", path = "rengo-storage", default-features = false }
 
 # External dependencies
 tokio.workspace = true
