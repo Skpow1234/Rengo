@@ -562,6 +562,7 @@ dependencies = [
  "ciborium",
  "clap",
  "criterion-plot",
+ "futures",
  "is-terminal",
  "itertools 0.10.5",
  "num-traits",
@@ -574,6 +575,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "tinytemplate",
+ "tokio",
  "walkdir",
 ]
 
@@ -1892,7 +1894,6 @@ checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
 name = "rengo"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "bincode",
  "bytes",
@@ -1904,16 +1905,13 @@ dependencies = [
  "iai",
  "mockall",
  "proptest",
- "prost",
  "rand 0.8.8",
  "rengo-config",
  "rengo-core",
  "rengo-storage",
- "rocksdb",
  "rstest",
  "serde",
  "serde_json",
- "sled",
  "tempfile",
  "test-log",
  "thiserror",
@@ -1921,7 +1919,6 @@ dependencies = [
  "tokio-test",
  "tonic",
  "tonic-build",
- "tower 0.5.3",
  "tracing",
 ]
 
@@ -1929,13 +1926,10 @@ dependencies = [
 name = "rengo-config"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "config",
  "rengo-core",
  "serde",
- "serde_json",
  "tempfile",
- "thiserror",
  "tokio",
  "toml",
  "tracing",
@@ -1945,12 +1939,9 @@ dependencies = [
 name = "rengo-core"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "chrono",
  "serde",
  "thiserror",
- "tokio",
- "tracing",
  "uuid",
 ]
 
@@ -1962,11 +1953,8 @@ dependencies = [
  "rengo-config",
  "rengo-core",
  "rocksdb",
- "serde",
  "sled",
- "thiserror",
  "tokio",
- "tracing",
 ]
 
 [[package]]

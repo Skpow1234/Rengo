@@ -65,6 +65,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: System deps
-        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libssl-dev pkg-config protobuf-compiler
       - name: Register & run benches
-        run: cargo bench --features sled --no-default-features -- --warm-up-time 1 --measurement-time 2
+        # Only the criterion harness understands these flags (not lib unit-test benches).
+        run: >
+          cargo bench --bench storage --features sled --no-default-features
+          -- --warm-up-time 1 --measurement-time 2

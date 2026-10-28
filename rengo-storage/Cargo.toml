@@ -9,11 +9,8 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 # Workspace dependencies
-serde.workspace = true
-thiserror.workspace = true
 async-trait.workspace = true
 tokio.workspace = true
-tracing.workspace = true
 
 # Local dependencies
 rengo-core = { version = "0.1.0", path = "../rengo-core" }

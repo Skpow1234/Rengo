@@ -13,8 +13,3 @@ serde.workspace = true
 thiserror.workspace = true
 uuid.workspace = true
 chrono.workspace = true
-
-# Additional dependencies
-async-trait.workspace = true
-tokio.workspace = true
-tracing.workspace = true
