@@ -82,7 +82,7 @@ ignored = ["bytes", "h2", "crossbeam-epoch"]
 
 [workspace.dependencies]
 # Async runtime
-tokio = { version = "1.40", features = ["full", "tracing"] }
+tokio = { version = "1.54.1", features = ["full", "tracing"] }
 tokio-util = "0.7"
 
 # Serialization

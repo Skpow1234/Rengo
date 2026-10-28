@@ -13,9 +13,6 @@ yanked = "warn"
 
 # Ignore specific advisories if needed
 ignore = [
-    # Tracked: bump when crates publish fixes we can take without breaking APIs
-    "RUSTSEC-2026-0190", # anyhow Error::downcast_mut unsound
-    "RUSTSEC-2026-0097", # rand custom logger unsound
     # bincode 1.3.3 is considered complete; team ceased development (unmaintained)
     { id = "RUSTSEC-2025-0141", reason = "bincode 1.3.3 is complete; no API-compatible replacement yet" },
 ]
