@@ -62,7 +62,7 @@ tower-load-shed = "0.3"        # Load shedding middleware
 
 ```toml
 # Storage Engine
-rocksdb = { version = "0.22", features = ["multi-threaded-cf"] }  # Embedded key-value store with column families
+rocksdb = { version = "0.24", features = ["multi-threaded-cf"] }  # Embedded key-value store with column families
 sled = "0.34"                  # Pure Rust embedded database (alternative option)
 
 # Advanced storage features

@@ -17,7 +17,7 @@ rengo-core = { version = "0.1.0", path = "../rengo-core" }
 rengo-config = { version = "0.1.0", path = "../rengo-config" }
 
 # Storage engines
-rocksdb = { version = "0.22", optional = true }
+rocksdb = { version = "0.24", optional = true }
 sled = { version = "0.34", optional = true }
 
 [features]
